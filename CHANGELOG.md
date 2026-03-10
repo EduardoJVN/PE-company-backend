@@ -5,6 +5,19 @@
 
 ### Features
 
+* init schema ([c56c0de](https://github.com/EduardoJVN/PE-company-backend/commit/c56c0debbaf15f097c29c357787327ce0e1f82b2))
+* init schema ([492339a](https://github.com/EduardoJVN/PE-company-backend/commit/492339ab31f9a1eb5044183854c7ba014c122dfd))
+
+
+### Bug Fixes
+
+* deploy ci/cd ([a89eb61](https://github.com/EduardoJVN/PE-company-backend/commit/a89eb61dbd7a1d742328ae8ace5d8769ec7bb80c))
+
+## 1.0.0 (2026-03-10)
+
+
+### Features
+
 * add base controller ([74d0264](https://github.com/EduardoJVN/express-typescript-hexagonal-clean-template/commit/74d0264a82abae80819ea52e61e54282f07ffa3c))
 * auth module infraestructure and domian ([a4f9e03](https://github.com/EduardoJVN/express-typescript-hexagonal-clean-template/commit/a4f9e030bea3de652e4b3319c8fe497401390e77))
 * middleware request log and log level ([381648e](https://github.com/EduardoJVN/express-typescript-hexagonal-clean-template/commit/381648e0584aae22c3a18f72be62bd9f6481e77f))
