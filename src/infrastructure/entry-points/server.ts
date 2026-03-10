@@ -36,7 +36,12 @@ export function createServer(
   createJwtAuthMiddleware(tokenSigner, tokenBlacklist);
 
   app.use('/health', (_req, res) => {
-    res.status(200).send('OK');
+    res.status(200).send({
+      status: 'ok',
+      time: new Date().toISOString(),
+      appName: ENV.APP_NAME.toUpperCase(),
+      version: ENV.VERSION,
+    });
   });
 
   // 404 handler — no route matched
