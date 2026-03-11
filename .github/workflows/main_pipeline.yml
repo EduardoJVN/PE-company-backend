@@ -2,14 +2,27 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
-    branches: [develop, qa, main]
-  create:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Entorno destino'
+        required: true
+        type: choice
+        options:
+          - develop
+          - qa
+          - prod
+      tag:
+        description: 'Tag a deployar (ej: v1.2.0)'
+        required: true
 
 jobs:
   quality-check:
     name: 🔍 Calidad (Lint & Test)
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,11 +41,7 @@ jobs:
     name: 🏗️ Build Verification
     needs: quality-check
     runs-on: ubuntu-latest
-    # Ejecutar si es una rama principal, un PR hacia ellas, o la creación de un Tag
-    if: |
-      contains(fromJSON('["refs/heads/main", "refs/heads/develop", "refs/heads/qa"]'), github.ref) ||
-      github.event_name == 'pull_request' ||
-      github.event.ref_type == 'tag'
+    if: github.event_name != 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,56 +54,56 @@ jobs:
         run: yarn build
 
   deploy:
-    name: 🚀 Build & Push to GHCR
-    needs: build-check
+    name: 🚀 Deploy → ${{ github.event.inputs.environment }} (${{ github.event.inputs.tag }})
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
     permissions:
       contents: read
-      packages: write # Vital para poder subir la imagen a GHCR
-    # Solo despliega en PUSH a dev/qa O cuando se crea un TAG (PROD)
-    if: |
-      (github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/qa')) ||
-      (github.event_name == 'create' && github.event.ref_type == 'tag')
-
+      packages: write
     steps:
-      - name: ⬇️ Checkout Repo
+      - name: ⬇️ Checkout ${{ github.event.inputs.tag }}
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
 
-      - name: 🔐 Login to GHCR (Only for Dev)
+      - name: 🔐 Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🏷️ Determine Tag Name
+      - name: 🏷️ Set Variables
         id: vars
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            echo "env_tag=dev" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/qa" ]]; then
-            echo "env_tag=qa" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.ref_type }}" == "tag" ]]; then
-            # Extrae solo el nombre del tag (ej: v1.0.0)
-            echo "env_tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          REPO="${GITHUB_REPOSITORY,,}"
+          ENV="${{ github.event.inputs.environment }}"
+          TAG="${{ github.event.inputs.tag }}"
+
+          case "$ENV" in
+            develop) ENV_TAG="dev" ;;
+            qa)      ENV_TAG="qa"  ;;
+            prod)    ENV_TAG="$TAG" ;;
+          esac
+
+          DOCKER_TAGS="ghcr.io/${REPO}:${ENV_TAG}"
+          if [[ "$ENV" == "prod" ]]; then
+            DOCKER_TAGS="${DOCKER_TAGS}"$'\n'"ghcr.io/${REPO}:latest"
           fi
 
-      - name: 🏷️ Set Lowercase Repository Name
-        id: repo_name
-        run: |
-          # Convierte 'Usuario/Repo' a 'usuario/repo' y lo guarda en los outputs del step
-          echo "lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+          echo "env_tag=${ENV_TAG}" >> $GITHUB_OUTPUT
+          echo "tags<<EOF" >> $GITHUB_OUTPUT
+          echo "$DOCKER_TAGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: 🏗️ Build and Push Image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          # La imagen se llamará ghcr.io/tu-usuario/nombre-del-repo:tag
-          tags: |
-            ghcr.io/${{ steps.repo_name.outputs.lowercase }}:${{ steps.vars.outputs.env_tag }}
-            ghcr.io/${{ steps.repo_name.outputs.lowercase }}:latest
+          tags: ${{ steps.vars.outputs.tags }}
 
       - name: ✅ Summary
         run: |
-          echo "Imagen subida exitosamente con el tag: ${{ steps.vars.outputs.env_tag }}"
+          echo "✅ Imagen deployada a ${{ github.event.inputs.environment }} con tag: ${{ steps.vars.outputs.env_tag }}"
