@@ -7,14 +7,14 @@ import type {
   ResponseCookie,
 } from '@infra/entry-points/base.controller.js';
 
-function toAuthenticatedRequest(req: Request, userId: string): AuthenticatedRequest {
+function toAuthenticatedRequest(req: Request, res: Response): AuthenticatedRequest {
   return {
     body: req.body as unknown,
     params: req.params as Record<string, string>,
     query: req.query as Record<string, string>,
     cookies: req.cookies as Record<string, string>,
     headers: req.headers as Record<string, string>,
-    userId,
+    userId: res.locals['userId'] as string,
   };
 }
 
@@ -54,9 +54,7 @@ export function createCompanyRoutes(
   router.use(jwtMiddleware);
 
   router.post('/', async (req, res) => {
-    const result = await controller.create(
-      toAuthenticatedRequest(req, res.locals['userId'] as string),
-    );
+    const result = await controller.create(toAuthenticatedRequest(req, res));
     sendHttpResponse(res, result);
   });
 

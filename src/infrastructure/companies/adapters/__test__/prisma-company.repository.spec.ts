@@ -17,6 +17,7 @@ const companyData: CreateCompanyData = {
   ownerId: 'owner-uuid',
   name: 'Acme Corp',
   statusId: CompanyStatusId.ACTIVE,
+  sectorIds: [1],
 };
 
 const memberData: CreateMemberData = {
@@ -41,11 +42,8 @@ const dbResult: CompanyResult = {
 
 function makeMockDb(createResult: CompanyResult) {
   const mockCreate = vi.fn().mockResolvedValue(createResult);
-  const mockTx = { company: { create: mockCreate } };
   const mockDb = {
-    $transaction: vi
-      .fn()
-      .mockImplementation((fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)),
+    company: { create: mockCreate },
   } as unknown as PrismaClient;
 
   return { mockDb, mockCreate };
@@ -58,7 +56,7 @@ describe('PrismaCompanyRepository', () => {
     vi.clearAllMocks();
   });
 
-  it('calls company.create inside a transaction', async () => {
+  it('calls company.create once', async () => {
     const { mockDb, mockCreate } = makeMockDb(dbResult);
     repo = new PrismaCompanyRepository(mockDb);
 
@@ -92,7 +90,7 @@ describe('PrismaCompanyRepository', () => {
     expect(callData.members.create.statusId).toBe(CompanyMemberStatusId.ACTIVE);
   });
 
-  it('creates sectors when sectorIds are provided', async () => {
+  it('creates sectors from sectorIds', async () => {
     const { mockDb, mockCreate } = makeMockDb(dbResult);
     repo = new PrismaCompanyRepository(mockDb);
 
@@ -102,17 +100,7 @@ describe('PrismaCompanyRepository', () => {
     expect(callData.sectors).toEqual({ create: [{ sectorId: 1 }, { sectorId: 3 }] });
   });
 
-  it('omits sectors when sectorIds is empty', async () => {
-    const { mockDb, mockCreate } = makeMockDb(dbResult);
-    repo = new PrismaCompanyRepository(mockDb);
-
-    await repo.createWithOwner({ ...companyData, sectorIds: [] }, memberData);
-
-    const callData = mockCreate.mock.calls[0][0].data;
-    expect(callData.sectors).toBeUndefined();
-  });
-
-  it('returns the company result from the transaction', async () => {
+  it('returns the company result', async () => {
     const { mockDb } = makeMockDb(dbResult);
     repo = new PrismaCompanyRepository(mockDb);
 

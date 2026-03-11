@@ -23,15 +23,9 @@ async function bootstrap() {
   await prisma.$connect();
   logger.info('Database connected');
 
-  const { auth, companies } = await createAppModule();
+  const appModule = await createAppModule();
 
-  const app = createServer(
-    logger,
-    errorReporter,
-    auth.tokenSigner,
-    auth.tokenBlacklist,
-    companies.companyController,
-  );
+  const app = createServer(logger, errorReporter, appModule);
 
   process.on('SIGTERM', async () => {
     await prisma.$disconnect();

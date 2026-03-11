@@ -3,7 +3,7 @@ import { createCompanyBodySchema } from '@infra/companies/entry-points/schemas/c
 
 describe('createCompanyBodySchema', () => {
   it('accepts minimal valid input', () => {
-    const result = createCompanyBodySchema.safeParse({ name: 'Acme Corp' });
+    const result = createCompanyBodySchema.safeParse({ name: 'Acme Corp', sectorIds: [1] });
     expect(result.success).toBe(true);
   });
 
@@ -18,22 +18,36 @@ describe('createCompanyBodySchema', () => {
   });
 
   it('rejects missing name', () => {
-    const result = createCompanyBodySchema.safeParse({});
+    const result = createCompanyBodySchema.safeParse({ sectorIds: [1] });
     expect(result.success).toBe(false);
   });
 
   it('rejects empty name', () => {
-    const result = createCompanyBodySchema.safeParse({ name: '' });
+    const result = createCompanyBodySchema.safeParse({ name: '', sectorIds: [1] });
     expect(result.success).toBe(false);
   });
 
   it('rejects name longer than 255 chars', () => {
-    const result = createCompanyBodySchema.safeParse({ name: 'a'.repeat(256) });
+    const result = createCompanyBodySchema.safeParse({ name: 'a'.repeat(256), sectorIds: [1] });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing sectorIds', () => {
+    const result = createCompanyBodySchema.safeParse({ name: 'Acme Corp' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects empty sectorIds array', () => {
+    const result = createCompanyBodySchema.safeParse({ name: 'Acme Corp', sectorIds: [] });
     expect(result.success).toBe(false);
   });
 
   it('rejects invalid logoUrl', () => {
-    const result = createCompanyBodySchema.safeParse({ name: 'Acme', logoUrl: 'not-a-url' });
+    const result = createCompanyBodySchema.safeParse({
+      name: 'Acme',
+      logoUrl: 'not-a-url',
+      sectorIds: [1],
+    });
     expect(result.success).toBe(false);
   });
 

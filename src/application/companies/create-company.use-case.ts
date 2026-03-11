@@ -14,7 +14,7 @@ export interface CreateCompanyInput {
   name: string;
   description?: string;
   logoUrl?: string;
-  sectorIds?: number[];
+  sectorIds: number[];
 }
 
 export class CreateCompanyUseCase {

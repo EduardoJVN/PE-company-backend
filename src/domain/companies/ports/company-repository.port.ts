@@ -5,7 +5,7 @@ export interface CreateCompanyData {
   description?: string;
   logoUrl?: string;
   statusId: number;
-  sectorIds?: number[];
+  sectorIds: number[];
 }
 
 export interface CreateMemberData {

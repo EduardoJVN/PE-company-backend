@@ -21,6 +21,7 @@ const mockUseCase = {
   execute: vi.fn().mockResolvedValue(mockResult),
 } as unknown as CreateCompanyUseCase;
 
+const validBody = { name: 'Acme Corp', sectorIds: [1] };
 const baseReq = (body: unknown): AuthenticatedRequest => ({ body, userId: 'owner-uuid' });
 
 describe('CompanyController.create', () => {
@@ -32,21 +33,21 @@ describe('CompanyController.create', () => {
   });
 
   it('returns 201 with company on valid input', async () => {
-    const response = await controller.create(baseReq({ name: 'Acme Corp' }));
+    const response = await controller.create(baseReq(validBody));
 
     expect(response.status).toBe(201);
     expect(response.body).toEqual(mockResult);
   });
 
   it('calls use case with ownerId from userId', async () => {
-    await controller.create(baseReq({ name: 'Acme Corp' }));
+    await controller.create(baseReq(validBody));
 
     expect(vi.mocked(mockUseCase.execute)).toHaveBeenCalledWith(
-      expect.objectContaining({ ownerId: 'owner-uuid', name: 'Acme Corp' }),
+      expect.objectContaining({ ownerId: 'owner-uuid', name: 'Acme Corp', sectorIds: [1] }),
     );
   });
 
-  it('passes optional fields to use case', async () => {
+  it('passes all fields to use case', async () => {
     await controller.create(
       baseReq({
         name: 'Acme Corp',
@@ -66,20 +67,34 @@ describe('CompanyController.create', () => {
   });
 
   it('returns 400 when name is missing', async () => {
-    const response = await controller.create(baseReq({}));
+    const response = await controller.create(baseReq({ sectorIds: [1] }));
 
     expect(response.status).toBe(400);
     expect((response.body as { error: string }).error).toBeTruthy();
   });
 
+  it('returns 400 when sectorIds is missing', async () => {
+    const response = await controller.create(baseReq({ name: 'Acme Corp' }));
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when sectorIds is empty', async () => {
+    const response = await controller.create(baseReq({ name: 'Acme Corp', sectorIds: [] }));
+
+    expect(response.status).toBe(400);
+  });
+
   it('returns 400 when name is empty string', async () => {
-    const response = await controller.create(baseReq({ name: '' }));
+    const response = await controller.create(baseReq({ name: '', sectorIds: [1] }));
 
     expect(response.status).toBe(400);
   });
 
   it('returns 400 when logoUrl is not a valid URL', async () => {
-    const response = await controller.create(baseReq({ name: 'Acme Corp', logoUrl: 'not-a-url' }));
+    const response = await controller.create(
+      baseReq({ name: 'Acme Corp', logoUrl: 'not-a-url', sectorIds: [1] }),
+    );
 
     expect(response.status).toBe(400);
   });
@@ -87,7 +102,7 @@ describe('CompanyController.create', () => {
   it('returns 500 when use case throws unexpected error', async () => {
     vi.mocked(mockUseCase.execute).mockRejectedValueOnce(new Error('DB failure'));
 
-    const response = await controller.create(baseReq({ name: 'Acme Corp' }));
+    const response = await controller.create(baseReq(validBody));
 
     expect(response.status).toBe(500);
   });

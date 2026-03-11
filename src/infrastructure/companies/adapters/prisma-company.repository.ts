@@ -25,31 +25,25 @@ export class PrismaCompanyRepository implements ICompanyRepository {
     company: CreateCompanyData,
     member: CreateMemberData,
   ): Promise<CompanyResult> {
-    return this.db.$transaction(async (tx) => {
-      const created = await tx.company.create({
-        data: {
-          id: company.id,
-          ownerId: company.ownerId,
-          name: company.name,
-          description: company.description ?? null,
-          logoUrl: company.logoUrl ?? null,
-          statusId: company.statusId,
-          sectors: company.sectorIds?.length
-            ? { create: company.sectorIds.map((sectorId) => ({ sectorId })) }
-            : undefined,
-          members: {
-            create: {
-              id: member.id,
-              userId: member.userId,
-              roleId: member.roleId,
-              statusId: member.statusId,
-            },
+    return this.db.company.create({
+      data: {
+        id: company.id,
+        ownerId: company.ownerId,
+        name: company.name,
+        description: company.description ?? null,
+        logoUrl: company.logoUrl ?? null,
+        statusId: company.statusId,
+        sectors: { create: company.sectorIds.map((sectorId) => ({ sectorId })) },
+        members: {
+          create: {
+            id: member.id,
+            userId: member.userId,
+            roleId: member.roleId,
+            statusId: member.statusId,
           },
         },
-        select: companySelect,
-      });
-
-      return created;
+      },
+      select: companySelect,
     });
   }
 }
