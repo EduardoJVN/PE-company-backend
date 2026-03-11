@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { CompanyMemberStatusId } from '@domain/catalog-ids.js';
 import type {
   ICompanyRepository,
   CreateCompanyData,
@@ -40,6 +41,20 @@ export class PrismaCompanyRepository implements ICompanyRepository {
             userId: member.userId,
             roleId: member.roleId,
             statusId: member.statusId,
+          },
+        },
+      },
+      select: companySelect,
+    });
+  }
+
+  async findByMemberId(userId: string): Promise<CompanyResult[]> {
+    return this.db.company.findMany({
+      where: {
+        members: {
+          some: {
+            userId,
+            statusId: CompanyMemberStatusId.ACTIVE,
           },
         },
       },

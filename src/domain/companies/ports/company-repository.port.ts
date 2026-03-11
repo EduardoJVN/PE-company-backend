@@ -30,4 +30,5 @@ export interface CompanyResult {
 
 export interface ICompanyRepository {
   createWithOwner(company: CreateCompanyData, member: CreateMemberData): Promise<CompanyResult>;
+  findByMemberId(userId: string): Promise<CompanyResult[]>;
 }

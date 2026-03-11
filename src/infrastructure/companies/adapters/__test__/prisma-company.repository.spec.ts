@@ -40,16 +40,17 @@ const dbResult: CompanyResult = {
   createdAt: new Date('2026-01-01'),
 };
 
-function makeMockDb(createResult: CompanyResult) {
+function makeMockDb(createResult: CompanyResult, findManyResult: CompanyResult[] = []) {
   const mockCreate = vi.fn().mockResolvedValue(createResult);
+  const mockFindMany = vi.fn().mockResolvedValue(findManyResult);
   const mockDb = {
-    company: { create: mockCreate },
+    company: { create: mockCreate, findMany: mockFindMany },
   } as unknown as PrismaClient;
 
-  return { mockDb, mockCreate };
+  return { mockDb, mockCreate, mockFindMany };
 }
 
-describe('PrismaCompanyRepository', () => {
+describe('PrismaCompanyRepository.createWithOwner', () => {
   let repo: PrismaCompanyRepository;
 
   beforeEach(() => {
@@ -107,5 +108,51 @@ describe('PrismaCompanyRepository', () => {
     const result = await repo.createWithOwner(companyData, memberData);
 
     expect(result).toEqual(dbResult);
+  });
+});
+
+describe('PrismaCompanyRepository.findByMemberId', () => {
+  let repo: PrismaCompanyRepository;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('calls company.findMany once', async () => {
+    const { mockDb, mockFindMany } = makeMockDb(dbResult, [dbResult]);
+    repo = new PrismaCompanyRepository(mockDb);
+
+    await repo.findByMemberId('user-uuid');
+
+    expect(mockFindMany).toHaveBeenCalledOnce();
+  });
+
+  it('filters by userId and ACTIVE member status', async () => {
+    const { mockDb, mockFindMany } = makeMockDb(dbResult, [dbResult]);
+    repo = new PrismaCompanyRepository(mockDb);
+
+    await repo.findByMemberId('user-uuid');
+
+    const callArg = mockFindMany.mock.calls[0][0];
+    expect(callArg.where.members.some.userId).toBe('user-uuid');
+    expect(callArg.where.members.some.statusId).toBe(CompanyMemberStatusId.ACTIVE);
+  });
+
+  it('returns the list of companies', async () => {
+    const { mockDb } = makeMockDb(dbResult, [dbResult]);
+    repo = new PrismaCompanyRepository(mockDb);
+
+    const result = await repo.findByMemberId('user-uuid');
+
+    expect(result).toEqual([dbResult]);
+  });
+
+  it('returns empty array when user has no active memberships', async () => {
+    const { mockDb } = makeMockDb(dbResult, []);
+    repo = new PrismaCompanyRepository(mockDb);
+
+    const result = await repo.findByMemberId('user-uuid');
+
+    expect(result).toEqual([]);
   });
 });

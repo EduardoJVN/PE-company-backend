@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CompanyController } from '@infra/companies/entry-points/company.controller.js';
 import type { CreateCompanyUseCase } from '@application/companies/create-company.use-case.js';
+import type { ListMyCompaniesUseCase } from '@application/companies/list-my-companies.use-case.js';
 import type { CompanyResult } from '@domain/companies/ports/company-repository.port.js';
 import type { AuthenticatedRequest } from '@infra/entry-points/base.controller.js';
 import { CompanyStatusId } from '@domain/catalog-ids.js';
@@ -17,9 +18,13 @@ const mockResult: CompanyResult = {
   createdAt: new Date('2026-01-01'),
 };
 
-const mockUseCase = {
+const mockCreateUseCase = {
   execute: vi.fn().mockResolvedValue(mockResult),
 } as unknown as CreateCompanyUseCase;
+
+const mockListUseCase = {
+  execute: vi.fn().mockResolvedValue([mockResult]),
+} as unknown as ListMyCompaniesUseCase;
 
 const validBody = { name: 'Acme Corp', sectorIds: [1] };
 const baseReq = (body: unknown): AuthenticatedRequest => ({ body, userId: 'owner-uuid' });
@@ -29,7 +34,7 @@ describe('CompanyController.create', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    controller = new CompanyController(mockUseCase);
+    controller = new CompanyController(mockCreateUseCase, mockListUseCase);
   });
 
   it('returns 201 with company on valid input', async () => {
@@ -42,7 +47,7 @@ describe('CompanyController.create', () => {
   it('calls use case with ownerId from userId', async () => {
     await controller.create(baseReq(validBody));
 
-    expect(vi.mocked(mockUseCase.execute)).toHaveBeenCalledWith(
+    expect(vi.mocked(mockCreateUseCase.execute)).toHaveBeenCalledWith(
       expect.objectContaining({ ownerId: 'owner-uuid', name: 'Acme Corp', sectorIds: [1] }),
     );
   });
@@ -57,7 +62,7 @@ describe('CompanyController.create', () => {
       }),
     );
 
-    expect(vi.mocked(mockUseCase.execute)).toHaveBeenCalledWith(
+    expect(vi.mocked(mockCreateUseCase.execute)).toHaveBeenCalledWith(
       expect.objectContaining({
         description: 'Una empresa',
         logoUrl: 'https://example.com/logo.png',
@@ -100,9 +105,48 @@ describe('CompanyController.create', () => {
   });
 
   it('returns 500 when use case throws unexpected error', async () => {
-    vi.mocked(mockUseCase.execute).mockRejectedValueOnce(new Error('DB failure'));
+    vi.mocked(mockCreateUseCase.execute).mockRejectedValueOnce(new Error('DB failure'));
 
     const response = await controller.create(baseReq(validBody));
+
+    expect(response.status).toBe(500);
+  });
+});
+
+describe('CompanyController.listMine', () => {
+  let controller: CompanyController;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    controller = new CompanyController(mockCreateUseCase, mockListUseCase);
+  });
+
+  it('returns 200 with list of companies', async () => {
+    const response = await controller.listMine({ userId: 'user-uuid' });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([mockResult]);
+  });
+
+  it('calls use case with userId from request', async () => {
+    await controller.listMine({ userId: 'user-uuid' });
+
+    expect(vi.mocked(mockListUseCase.execute)).toHaveBeenCalledWith({ userId: 'user-uuid' });
+  });
+
+  it('returns 200 with empty array when user has no companies', async () => {
+    vi.mocked(mockListUseCase.execute).mockResolvedValueOnce([]);
+
+    const response = await controller.listMine({ userId: 'user-uuid' });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+
+  it('returns 500 when use case throws unexpected error', async () => {
+    vi.mocked(mockListUseCase.execute).mockRejectedValueOnce(new Error('DB failure'));
+
+    const response = await controller.listMine({ userId: 'user-uuid' });
 
     expect(response.status).toBe(500);
   });

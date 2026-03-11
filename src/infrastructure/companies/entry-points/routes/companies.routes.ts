@@ -58,5 +58,10 @@ export function createCompanyRoutes(
     sendHttpResponse(res, result);
   });
 
+  router.get('/mine', async (req, res) => {
+    const result = await controller.listMine(toAuthenticatedRequest(req, res));
+    sendHttpResponse(res, result);
+  });
+
   return router;
 }
