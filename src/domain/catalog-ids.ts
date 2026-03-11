@@ -33,9 +33,29 @@ export type RegisterTypeId = (typeof RegisterTypeId)[keyof typeof RegisterTypeId
 
 export const CompanyMemberRoleId = {
   OWNER: 1,
-  ADMIN: 3,
+  ADMIN: 2,
   EDITOR: 3,
   VIEWER: 4,
 } as const;
 
 export type CompanyMemberRoleId = (typeof CompanyMemberRoleId)[keyof typeof CompanyMemberRoleId];
+
+export const CompanyStatusId = {
+  ACTIVE: 1,
+  PENDING_VERIFIED: 2,
+  VERIFIED: 3,
+  SUSPENDED: 4,
+  INACTIVE: 5,
+} as const;
+
+export type CompanyStatusId = (typeof CompanyStatusId)[keyof typeof CompanyStatusId];
+
+export const CompanyMemberStatusId = {
+  PENDING: 1,
+  ACTIVE: 2,
+  SUSPENDED: 3,
+  INACTIVE: 4,
+} as const;
+
+export type CompanyMemberStatus =
+  (typeof CompanyMemberStatusId)[keyof typeof CompanyMemberStatusId];

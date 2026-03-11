@@ -10,6 +10,10 @@ export interface HttpRequest {
   userId?: string;
 }
 
+export interface AuthenticatedRequest extends HttpRequest {
+  userId: string;
+}
+
 export interface ResponseCookie {
   name: string;
   value: string;

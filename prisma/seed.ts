@@ -51,8 +51,28 @@ async function main() {
     await tx.$executeRawUnsafe(`
       INSERT INTO "company_member_roles" (id, name, created_at, updated_at) VALUES
       (1, 'OWNER', NOW(), NOW()),
+      (2, 'ADMIN', NOW(), NOW()),
       (3, 'EDITOR', NOW(), NOW()),
       (4, 'VIEWER', NOW(), NOW());
+    `);
+
+    // 3. Insertar Estados de companies
+    await tx.$executeRawUnsafe(`
+      INSERT INTO "company_status" (id, name, created_at, updated_at) VALUES
+      (1, 'ACTIVE', NOW(), NOW()),
+      (2, 'PENDING_VERIFIED', NOW(), NOW()),
+      (3, 'VERIFIED', NOW(), NOW()),
+      (4, 'SUSPENDED', NOW(), NOW()),
+      (5, 'INACTIVE', NOW(), NOW());
+    `);
+
+    // 3. Insertar Estados de miembros de empresa
+    await tx.$executeRawUnsafe(`
+      INSERT INTO "company_member_status" (id, name, created_at, updated_at) VALUES
+      (1, 'PENDING', NOW(), NOW()),
+      (2, 'ACTIVE', NOW(), NOW()),
+      (3, 'SUSPENDED', NOW(), NOW()),
+      (4, 'INACTIVE', NOW(), NOW());
     `);
 
     // 2. Insertar usuario de prueba
