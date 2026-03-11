@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/EduardoJVN/PE-company-backend/compare/v1.1.5...v1.2.0) (2026-03-11)
+
+
+### Features
+
+* deploy ci cd ([0c3f559](https://github.com/EduardoJVN/PE-company-backend/commit/0c3f559d25dca12465d7412b3c3c2934de49847f))
+
+
+### Bug Fixes
+
+* deploy ([e073fd8](https://github.com/EduardoJVN/PE-company-backend/commit/e073fd8cbb0c3615b1f124a38d3e821623cea9a8))
+
 ## [1.1.5](https://github.com/EduardoJVN/PE-company-backend/compare/v1.1.4...v1.1.5) (2026-03-11)
 
 
