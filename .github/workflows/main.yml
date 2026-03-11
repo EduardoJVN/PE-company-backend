@@ -22,7 +22,6 @@ on:
 jobs:
   quality-check:
     name: 🔍 Calidad (Lint & Test)
-    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +39,6 @@ jobs:
   build-check:
     name: 🏗️ Build Verification
     needs: quality-check
-    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -70,6 +68,7 @@ jobs:
 
   deploy:
     name: 🚀 Deploy → ${{ github.event.inputs.environment }} (${{ github.event.inputs.tag }})
+    needs: [build-check]
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment }}
