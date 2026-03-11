@@ -4,14 +4,22 @@ import type { CreateCompanyUseCase } from '@application/companies/create-company
 import type { ListMyCompaniesUseCase } from '@application/companies/list-my-companies.use-case.js';
 import type { GetCompanyUseCase } from '@application/companies/get-company.use-case.js';
 import type { UpdateCompanyUseCase } from '@application/companies/update-company.use-case.js';
+import type { ChangeMemberRoleUseCase } from '@application/companies/change-member-role.use-case.js';
 import type {
   CompanyResult,
   CompanyDetailResult,
+  CompanyMemberResult,
 } from '@domain/companies/ports/company-repository.port.js';
 import type { AuthenticatedRequest } from '@infra/entry-points/base.controller.js';
-import { CompanyStatusId } from '@domain/catalog-ids.js';
+import {
+  CompanyStatusId,
+  CompanyMemberRoleId,
+  CompanyMemberStatusId,
+} from '@domain/catalog-ids.js';
 import { CompanyNotFoundError } from '@domain/companies/errors/company-not-found.error.js';
+import { CompanyMemberNotFoundError } from '@domain/companies/errors/company-member-not-found.error.js';
 import { UnauthorizedCompanyAccessError } from '@domain/companies/errors/unauthorized-company-access.error.js';
+import { CannotChangeOwnerRoleError } from '@domain/companies/errors/cannot-change-owner-role.error.js';
 
 const mockResult: CompanyResult = {
   id: 'company-uuid',
@@ -50,6 +58,22 @@ const mockUpdateUseCase = {
   execute: vi.fn().mockResolvedValue(mockResult),
 } as unknown as UpdateCompanyUseCase;
 
+const mockMemberResult: CompanyMemberResult = {
+  id: 'member-uuid',
+  companyId: 'company-uuid',
+  userId: 'editor-uuid',
+  roleId: CompanyMemberRoleId.ADMIN,
+  statusId: CompanyMemberStatusId.ACTIVE,
+  invitedAt: null,
+  invitedBy: null,
+  acceptedAt: null,
+  acceptedBy: null,
+};
+
+const mockChangeMemberRoleUseCase = {
+  execute: vi.fn().mockResolvedValue(mockMemberResult),
+} as unknown as ChangeMemberRoleUseCase;
+
 const validBody = { name: 'Acme Corp', sectorIds: [1] };
 const baseReq = (body: unknown): AuthenticatedRequest => ({ body, userId: 'owner-uuid' });
 
@@ -59,6 +83,7 @@ function makeController() {
     mockListUseCase,
     mockGetUseCase,
     mockUpdateUseCase,
+    mockChangeMemberRoleUseCase,
   );
 }
 
@@ -330,6 +355,126 @@ describe('CompanyController.update', () => {
     vi.mocked(mockUpdateUseCase.execute).mockRejectedValueOnce(new Error('DB failure'));
 
     const response = await controller.update(updateReq(validUpdateBody));
+
+    expect(response.status).toBe(500);
+  });
+});
+
+describe('CompanyController.changeMemberRole', () => {
+  let controller: CompanyController;
+
+  const validRoleBody = { roleId: CompanyMemberRoleId.ADMIN };
+  const changeRoleReq = (
+    body: unknown,
+    companyId = 'company-uuid',
+    userId = 'editor-uuid',
+  ): AuthenticatedRequest => ({
+    body,
+    userId: 'owner-uuid',
+    params: { id: companyId, userId },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    controller = makeController();
+  });
+
+  it('returns 200 with updated member on valid input', async () => {
+    const response = await controller.changeMemberRole(changeRoleReq(validRoleBody));
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(mockMemberResult);
+  });
+
+  it('calls use case with companyId, requesterId, targetUserId and newRoleId', async () => {
+    await controller.changeMemberRole(changeRoleReq(validRoleBody));
+
+    expect(vi.mocked(mockChangeMemberRoleUseCase.execute)).toHaveBeenCalledWith({
+      companyId: 'company-uuid',
+      requesterId: 'owner-uuid',
+      targetUserId: 'editor-uuid',
+      newRoleId: CompanyMemberRoleId.ADMIN,
+    });
+  });
+
+  it('returns 400 when roleId is missing', async () => {
+    const response = await controller.changeMemberRole(changeRoleReq({}));
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when roleId is OWNER', async () => {
+    const response = await controller.changeMemberRole(
+      changeRoleReq({ roleId: CompanyMemberRoleId.OWNER }),
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when company id param is missing', async () => {
+    const response = await controller.changeMemberRole({
+      userId: 'owner-uuid',
+      body: validRoleBody,
+      params: { userId: 'editor-uuid' },
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when userId param is missing', async () => {
+    const response = await controller.changeMemberRole({
+      userId: 'owner-uuid',
+      body: validRoleBody,
+      params: { id: 'company-uuid' },
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when target is the owner (CannotChangeOwnerRoleError)', async () => {
+    vi.mocked(mockChangeMemberRoleUseCase.execute).mockRejectedValueOnce(
+      new CannotChangeOwnerRoleError(),
+    );
+
+    const response = await controller.changeMemberRole(changeRoleReq(validRoleBody));
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 403 when requester lacks permission', async () => {
+    vi.mocked(mockChangeMemberRoleUseCase.execute).mockRejectedValueOnce(
+      new UnauthorizedCompanyAccessError('company-uuid'),
+    );
+
+    const response = await controller.changeMemberRole(changeRoleReq(validRoleBody));
+
+    expect(response.status).toBe(403);
+  });
+
+  it('returns 404 when requester is not a company member', async () => {
+    vi.mocked(mockChangeMemberRoleUseCase.execute).mockRejectedValueOnce(
+      new CompanyNotFoundError('company-uuid'),
+    );
+
+    const response = await controller.changeMemberRole(changeRoleReq(validRoleBody));
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 404 when target user is not a member', async () => {
+    vi.mocked(mockChangeMemberRoleUseCase.execute).mockRejectedValueOnce(
+      new CompanyMemberNotFoundError('editor-uuid'),
+    );
+
+    const response = await controller.changeMemberRole(changeRoleReq(validRoleBody));
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 500 when use case throws unexpected error', async () => {
+    vi.mocked(mockChangeMemberRoleUseCase.execute).mockRejectedValueOnce(new Error('DB failure'));
+
+    const response = await controller.changeMemberRole(changeRoleReq(validRoleBody));
 
     expect(response.status).toBe(500);
   });

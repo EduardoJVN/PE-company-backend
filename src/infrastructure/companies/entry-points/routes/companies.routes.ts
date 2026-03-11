@@ -73,5 +73,10 @@ export function createCompanyRoutes(
     sendHttpResponse(res, result);
   });
 
+  router.put('/:id/members/:userId/role', async (req, res) => {
+    const result = await controller.changeMemberRole(toAuthenticatedRequest(req, res));
+    sendHttpResponse(res, result);
+  });
+
   return router;
 }

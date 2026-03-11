@@ -121,6 +121,24 @@ export class PrismaCompanyRepository implements ICompanyRepository {
     };
   }
 
+  async updateMemberRole(member: CompanyMember): Promise<CompanyMemberResult> {
+    return this.db.companyMember.update({
+      where: { id: member.id },
+      data: { roleId: member.roleId },
+      select: {
+        id: true,
+        companyId: true,
+        userId: true,
+        roleId: true,
+        statusId: true,
+        invitedAt: true,
+        invitedBy: true,
+        acceptedAt: true,
+        acceptedBy: true,
+      },
+    });
+  }
+
   async findMemberByUserAndCompany(
     companyId: string,
     userId: string,

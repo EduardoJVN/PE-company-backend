@@ -41,6 +41,7 @@ export interface CompanyMemberResult {
 export interface ICompanyRepository {
   createWithOwner(company: Company, member: CompanyMember): Promise<CompanyResult>;
   update(company: Company): Promise<CompanyResult>;
+  updateMemberRole(member: CompanyMember): Promise<CompanyMemberResult>;
   findByMemberId(userId: string): Promise<CompanyResult[]>;
   findByIdForMember(companyId: string, userId: string): Promise<CompanyDetailResult | null>;
   findMemberByUserAndCompany(
