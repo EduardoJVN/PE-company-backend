@@ -42,9 +42,15 @@ export interface ICompanyRepository {
   createWithOwner(company: Company, member: CompanyMember): Promise<CompanyResult>;
   update(company: Company): Promise<CompanyResult>;
   updateMemberRole(member: CompanyMember): Promise<CompanyMemberResult>;
+  removeMember(member: CompanyMember): Promise<void>;
+  activateMember(member: CompanyMember): Promise<void>;
   findByMemberId(userId: string): Promise<CompanyResult[]>;
   findByIdForMember(companyId: string, userId: string): Promise<CompanyDetailResult | null>;
   findMemberByUserAndCompany(
+    companyId: string,
+    userId: string,
+  ): Promise<CompanyMemberResult | null>;
+  findMemberByUserAndCompanyAnyStatus(
     companyId: string,
     userId: string,
   ): Promise<CompanyMemberResult | null>;

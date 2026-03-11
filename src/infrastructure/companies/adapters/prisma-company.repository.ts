@@ -139,6 +139,20 @@ export class PrismaCompanyRepository implements ICompanyRepository {
     });
   }
 
+  async removeMember(member: CompanyMember): Promise<void> {
+    await this.db.companyMember.update({
+      where: { id: member.id },
+      data: { statusId: member.statusId },
+    });
+  }
+
+  async activateMember(member: CompanyMember): Promise<void> {
+    await this.db.companyMember.update({
+      where: { id: member.id },
+      data: { statusId: member.statusId },
+    });
+  }
+
   async findMemberByUserAndCompany(
     companyId: string,
     userId: string,
@@ -149,6 +163,26 @@ export class PrismaCompanyRepository implements ICompanyRepository {
         userId,
         statusId: CompanyMemberStatusId.ACTIVE,
       },
+      select: {
+        id: true,
+        companyId: true,
+        userId: true,
+        roleId: true,
+        statusId: true,
+        invitedAt: true,
+        invitedBy: true,
+        acceptedAt: true,
+        acceptedBy: true,
+      },
+    });
+  }
+
+  async findMemberByUserAndCompanyAnyStatus(
+    companyId: string,
+    userId: string,
+  ): Promise<CompanyMemberResult | null> {
+    return this.db.companyMember.findFirst({
+      where: { companyId, userId },
       select: {
         id: true,
         companyId: true,

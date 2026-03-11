@@ -78,5 +78,15 @@ export function createCompanyRoutes(
     sendHttpResponse(res, result);
   });
 
+  router.put('/:id/members/:userId/reactivate', async (req, res) => {
+    const result = await controller.activateMember(toAuthenticatedRequest(req, res));
+    sendHttpResponse(res, result);
+  });
+
+  router.delete('/:id/members/:userId', async (req, res) => {
+    const result = await controller.removeMember(toAuthenticatedRequest(req, res));
+    sendHttpResponse(res, result);
+  });
+
   return router;
 }

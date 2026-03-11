@@ -1,6 +1,8 @@
 import { CompanyMemberRoleId, CompanyMemberStatusId } from '@domain/catalog-ids.js';
 import { CannotChangeOwnerRoleError } from '@domain/companies/errors/cannot-change-owner-role.error.js';
 import { CannotSuspendOwnerError } from '@domain/companies/errors/cannot-suspend-owner.error.js';
+import { CannotRemoveOwnerError } from '@domain/companies/errors/cannot-remove-owner.error.js';
+import { MemberNotDeletedError } from '@domain/companies/errors/member-not-deleted.error.js';
 
 export class CompanyMember {
   private constructor(
@@ -64,6 +66,37 @@ export class CompanyMember {
       this.userId,
       this.roleId,
       CompanyMemberStatusId.SUSPENDED,
+      this.invitedAt,
+      this.invitedBy,
+      this.acceptedAt,
+      this.acceptedBy,
+    );
+  }
+
+  reactivate(): CompanyMember {
+    if (this.statusId !== CompanyMemberStatusId.DELETED)
+      throw new MemberNotDeletedError(this.userId);
+    return new CompanyMember(
+      this.id,
+      this.companyId,
+      this.userId,
+      this.roleId,
+      CompanyMemberStatusId.ACTIVE,
+      this.invitedAt,
+      this.invitedBy,
+      this.acceptedAt,
+      this.acceptedBy,
+    );
+  }
+
+  remove(): CompanyMember {
+    if (this.roleId === CompanyMemberRoleId.OWNER) throw new CannotRemoveOwnerError();
+    return new CompanyMember(
+      this.id,
+      this.companyId,
+      this.userId,
+      this.roleId,
+      CompanyMemberStatusId.DELETED,
       this.invitedAt,
       this.invitedBy,
       this.acceptedAt,

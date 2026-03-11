@@ -3,6 +3,8 @@ import { CompanyMember } from '@domain/companies/entities/company-member.entity.
 import { CompanyMemberRoleId, CompanyMemberStatusId } from '@domain/catalog-ids.js';
 import { CannotChangeOwnerRoleError } from '@domain/companies/errors/cannot-change-owner-role.error.js';
 import { CannotSuspendOwnerError } from '@domain/companies/errors/cannot-suspend-owner.error.js';
+import { CannotRemoveOwnerError } from '@domain/companies/errors/cannot-remove-owner.error.js';
+import { MemberNotDeletedError } from '@domain/companies/errors/member-not-deleted.error.js';
 
 describe('CompanyMember.createOwner', () => {
   it('creates a member with OWNER role', () => {
@@ -236,6 +238,128 @@ describe('CompanyMember.suspend', () => {
     const owner = CompanyMember.createOwner('id', 'company-id', 'user-id');
 
     expect(() => owner.suspend()).toThrow(CannotSuspendOwnerError);
+  });
+});
+
+describe('CompanyMember.reactivate', () => {
+  it('returns a new member with ACTIVE status when DELETED', () => {
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      CompanyMemberStatusId.DELETED,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    const reactivated = member.reactivate();
+
+    expect(reactivated).not.toBe(member);
+    expect(reactivated.statusId).toBe(CompanyMemberStatusId.ACTIVE);
+  });
+
+  it('preserves all other fields after reactivation', () => {
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.ADMIN,
+      CompanyMemberStatusId.DELETED,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    const reactivated = member.reactivate();
+
+    expect(reactivated.id).toBe(member.id);
+    expect(reactivated.roleId).toBe(member.roleId);
+    expect(reactivated.userId).toBe(member.userId);
+    expect(reactivated.companyId).toBe(member.companyId);
+  });
+
+  it('throws MemberNotDeletedError when member is ACTIVE', () => {
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      CompanyMemberStatusId.ACTIVE,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    expect(() => member.reactivate()).toThrow(MemberNotDeletedError);
+  });
+
+  it('throws MemberNotDeletedError when member is SUSPENDED', () => {
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      CompanyMemberStatusId.SUSPENDED,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    expect(() => member.reactivate()).toThrow(MemberNotDeletedError);
+  });
+});
+
+describe('CompanyMember.remove', () => {
+  it('returns a new member with DELETED status', () => {
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      CompanyMemberStatusId.ACTIVE,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    const removed = member.remove();
+
+    expect(removed).not.toBe(member);
+    expect(removed.statusId).toBe(CompanyMemberStatusId.DELETED);
+  });
+
+  it('preserves all other fields after removal', () => {
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.ADMIN,
+      CompanyMemberStatusId.ACTIVE,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    const removed = member.remove();
+
+    expect(removed.id).toBe(member.id);
+    expect(removed.roleId).toBe(member.roleId);
+    expect(removed.userId).toBe(member.userId);
+    expect(removed.companyId).toBe(member.companyId);
+  });
+
+  it('throws CannotRemoveOwnerError when member is OWNER', () => {
+    const owner = CompanyMember.createOwner('id', 'company-id', 'user-id');
+
+    expect(() => owner.remove()).toThrow(CannotRemoveOwnerError);
   });
 });
 

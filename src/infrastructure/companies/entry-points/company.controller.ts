@@ -13,6 +13,8 @@ import type { ListMyCompaniesUseCase } from '@application/companies/list-my-comp
 import type { GetCompanyUseCase } from '@application/companies/get-company.use-case.js';
 import type { UpdateCompanyUseCase } from '@application/companies/update-company.use-case.js';
 import type { ChangeMemberRoleUseCase } from '@application/companies/change-member-role.use-case.js';
+import type { RemoveCompanyMemberUseCase } from '@application/companies/remove-company-member.use-case.js';
+import type { ActivateCompanyMemberUseCase } from '@application/companies/activate-company-member.use-case.js';
 
 export class CompanyController extends BaseController {
   constructor(
@@ -21,6 +23,8 @@ export class CompanyController extends BaseController {
     private readonly getCompanyUseCase: GetCompanyUseCase,
     private readonly updateCompanyUseCase: UpdateCompanyUseCase,
     private readonly changeMemberRoleUseCase: ChangeMemberRoleUseCase,
+    private readonly removeCompanyMemberUseCase: RemoveCompanyMemberUseCase,
+    private readonly activateCompanyMemberUseCase: ActivateCompanyMemberUseCase,
   ) {
     super();
   }
@@ -94,6 +98,42 @@ export class CompanyController extends BaseController {
         });
       },
       (result) => ({ status: 200, body: result }),
+      (error: ErrorResponse) => ({ status: error.status, body: { error: error.message } }),
+    );
+  }
+
+  async activateMember(req: AuthenticatedRequest): Promise<HttpResponse> {
+    return this.handleRequest(
+      () => {
+        const companyId = req.params?.['id'];
+        const targetUserId = req.params?.['userId'];
+        if (!companyId) throw new ValidationError('Company ID is required');
+        if (!targetUserId) throw new ValidationError('User ID is required');
+        return this.activateCompanyMemberUseCase.execute({
+          companyId,
+          requesterId: req.userId,
+          targetUserId,
+        });
+      },
+      () => ({ status: 204, body: null }),
+      (error: ErrorResponse) => ({ status: error.status, body: { error: error.message } }),
+    );
+  }
+
+  async removeMember(req: AuthenticatedRequest): Promise<HttpResponse> {
+    return this.handleRequest(
+      () => {
+        const companyId = req.params?.['id'];
+        const targetUserId = req.params?.['userId'];
+        if (!companyId) throw new ValidationError('Company ID is required');
+        if (!targetUserId) throw new ValidationError('User ID is required');
+        return this.removeCompanyMemberUseCase.execute({
+          companyId,
+          requesterId: req.userId,
+          targetUserId,
+        });
+      },
+      () => ({ status: 204, body: null }),
       (error: ErrorResponse) => ({ status: error.status, body: { error: error.message } }),
     );
   }

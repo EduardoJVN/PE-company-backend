@@ -5,6 +5,8 @@ import type { ListMyCompaniesUseCase } from '@application/companies/list-my-comp
 import type { GetCompanyUseCase } from '@application/companies/get-company.use-case.js';
 import type { UpdateCompanyUseCase } from '@application/companies/update-company.use-case.js';
 import type { ChangeMemberRoleUseCase } from '@application/companies/change-member-role.use-case.js';
+import type { RemoveCompanyMemberUseCase } from '@application/companies/remove-company-member.use-case.js';
+import type { ActivateCompanyMemberUseCase } from '@application/companies/activate-company-member.use-case.js';
 import type {
   CompanyResult,
   CompanyDetailResult,
@@ -20,6 +22,8 @@ import { CompanyNotFoundError } from '@domain/companies/errors/company-not-found
 import { CompanyMemberNotFoundError } from '@domain/companies/errors/company-member-not-found.error.js';
 import { UnauthorizedCompanyAccessError } from '@domain/companies/errors/unauthorized-company-access.error.js';
 import { CannotChangeOwnerRoleError } from '@domain/companies/errors/cannot-change-owner-role.error.js';
+import { CannotRemoveOwnerError } from '@domain/companies/errors/cannot-remove-owner.error.js';
+import { MemberNotDeletedError } from '@domain/companies/errors/member-not-deleted.error.js';
 
 const mockResult: CompanyResult = {
   id: 'company-uuid',
@@ -74,6 +78,14 @@ const mockChangeMemberRoleUseCase = {
   execute: vi.fn().mockResolvedValue(mockMemberResult),
 } as unknown as ChangeMemberRoleUseCase;
 
+const mockRemoveCompanyMemberUseCase = {
+  execute: vi.fn().mockResolvedValue(undefined),
+} as unknown as RemoveCompanyMemberUseCase;
+
+const mockActivateCompanyMemberUseCase = {
+  execute: vi.fn().mockResolvedValue(undefined),
+} as unknown as ActivateCompanyMemberUseCase;
+
 const validBody = { name: 'Acme Corp', sectorIds: [1] };
 const baseReq = (body: unknown): AuthenticatedRequest => ({ body, userId: 'owner-uuid' });
 
@@ -84,6 +96,8 @@ function makeController() {
     mockGetUseCase,
     mockUpdateUseCase,
     mockChangeMemberRoleUseCase,
+    mockRemoveCompanyMemberUseCase,
+    mockActivateCompanyMemberUseCase,
   );
 }
 
@@ -475,6 +489,197 @@ describe('CompanyController.changeMemberRole', () => {
     vi.mocked(mockChangeMemberRoleUseCase.execute).mockRejectedValueOnce(new Error('DB failure'));
 
     const response = await controller.changeMemberRole(changeRoleReq(validRoleBody));
+
+    expect(response.status).toBe(500);
+  });
+});
+
+describe('CompanyController.removeMember', () => {
+  let controller: CompanyController;
+
+  const removeReq = (companyId = 'company-uuid', userId = 'editor-uuid'): AuthenticatedRequest => ({
+    userId: 'owner-uuid',
+    params: { id: companyId, userId },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    controller = makeController();
+  });
+
+  it('returns 204 with no body on successful removal', async () => {
+    const response = await controller.removeMember(removeReq());
+
+    expect(response.status).toBe(204);
+    expect(response.body).toBeNull();
+  });
+
+  it('calls use case with companyId, requesterId and targetUserId', async () => {
+    await controller.removeMember(removeReq());
+
+    expect(vi.mocked(mockRemoveCompanyMemberUseCase.execute)).toHaveBeenCalledWith({
+      companyId: 'company-uuid',
+      requesterId: 'owner-uuid',
+      targetUserId: 'editor-uuid',
+    });
+  });
+
+  it('returns 400 when company id param is missing', async () => {
+    const response = await controller.removeMember({
+      userId: 'owner-uuid',
+      params: { userId: 'editor-uuid' },
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when userId param is missing', async () => {
+    const response = await controller.removeMember({
+      userId: 'owner-uuid',
+      params: { id: 'company-uuid' },
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when target is the owner (CannotRemoveOwnerError)', async () => {
+    vi.mocked(mockRemoveCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new CannotRemoveOwnerError(),
+    );
+
+    const response = await controller.removeMember(removeReq());
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 404 when requester is not a company member', async () => {
+    vi.mocked(mockRemoveCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new CompanyNotFoundError('company-uuid'),
+    );
+
+    const response = await controller.removeMember(removeReq());
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 404 when target user is not a member', async () => {
+    vi.mocked(mockRemoveCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new CompanyMemberNotFoundError('editor-uuid'),
+    );
+
+    const response = await controller.removeMember(removeReq());
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 500 when use case throws unexpected error', async () => {
+    vi.mocked(mockRemoveCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new Error('DB failure'),
+    );
+
+    const response = await controller.removeMember(removeReq());
+
+    expect(response.status).toBe(500);
+  });
+});
+
+describe('CompanyController.activateMember', () => {
+  let controller: CompanyController;
+
+  const activateReq = (
+    companyId = 'company-uuid',
+    userId = 'editor-uuid',
+  ): AuthenticatedRequest => ({
+    userId: 'owner-uuid',
+    params: { id: companyId, userId },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    controller = makeController();
+  });
+
+  it('returns 204 with no body on successful activation', async () => {
+    const response = await controller.activateMember(activateReq());
+
+    expect(response.status).toBe(204);
+    expect(response.body).toBeNull();
+  });
+
+  it('calls use case with companyId, requesterId and targetUserId', async () => {
+    await controller.activateMember(activateReq());
+
+    expect(vi.mocked(mockActivateCompanyMemberUseCase.execute)).toHaveBeenCalledWith({
+      companyId: 'company-uuid',
+      requesterId: 'owner-uuid',
+      targetUserId: 'editor-uuid',
+    });
+  });
+
+  it('returns 400 when company id param is missing', async () => {
+    const response = await controller.activateMember({
+      userId: 'owner-uuid',
+      params: { userId: 'editor-uuid' },
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when userId param is missing', async () => {
+    const response = await controller.activateMember({
+      userId: 'owner-uuid',
+      params: { id: 'company-uuid' },
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when target is not in DELETED status (MemberNotDeletedError)', async () => {
+    vi.mocked(mockActivateCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new MemberNotDeletedError('editor-uuid'),
+    );
+
+    const response = await controller.activateMember(activateReq());
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 403 when requester lacks permission', async () => {
+    vi.mocked(mockActivateCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new UnauthorizedCompanyAccessError('company-uuid'),
+    );
+
+    const response = await controller.activateMember(activateReq());
+
+    expect(response.status).toBe(403);
+  });
+
+  it('returns 404 when requester is not an active company member', async () => {
+    vi.mocked(mockActivateCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new CompanyNotFoundError('company-uuid'),
+    );
+
+    const response = await controller.activateMember(activateReq());
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 404 when target user has no membership record', async () => {
+    vi.mocked(mockActivateCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new CompanyMemberNotFoundError('editor-uuid'),
+    );
+
+    const response = await controller.activateMember(activateReq());
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 500 when use case throws unexpected error', async () => {
+    vi.mocked(mockActivateCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new Error('DB failure'),
+    );
+
+    const response = await controller.activateMember(activateReq());
 
     expect(response.status).toBe(500);
   });

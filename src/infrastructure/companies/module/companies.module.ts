@@ -5,6 +5,8 @@ import { ListMyCompaniesUseCase } from '@application/companies/list-my-companies
 import { GetCompanyUseCase } from '@application/companies/get-company.use-case.js';
 import { UpdateCompanyUseCase } from '@application/companies/update-company.use-case.js';
 import { ChangeMemberRoleUseCase } from '@application/companies/change-member-role.use-case.js';
+import { RemoveCompanyMemberUseCase } from '@application/companies/remove-company-member.use-case.js';
+import { ActivateCompanyMemberUseCase } from '@application/companies/activate-company-member.use-case.js';
 import { CompanyController } from '@infra/companies/entry-points/company.controller.js';
 
 export interface CompaniesModule {
@@ -18,12 +20,16 @@ export function createCompaniesModule(): CompaniesModule {
   const getCompanyUseCase = new GetCompanyUseCase(companyRepo);
   const updateCompanyUseCase = new UpdateCompanyUseCase(companyRepo);
   const changeMemberRoleUseCase = new ChangeMemberRoleUseCase(companyRepo);
+  const removeCompanyMemberUseCase = new RemoveCompanyMemberUseCase(companyRepo);
+  const activateCompanyMemberUseCase = new ActivateCompanyMemberUseCase(companyRepo);
   const companyController = new CompanyController(
     createCompanyUseCase,
     listMyCompaniesUseCase,
     getCompanyUseCase,
     updateCompanyUseCase,
     changeMemberRoleUseCase,
+    removeCompanyMemberUseCase,
+    activateCompanyMemberUseCase,
   );
 
   return { companyController };
