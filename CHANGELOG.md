@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/EduardoJVN/PE-company-backend/compare/v1.2.0...v1.2.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* direct deploy dev ([fcb23d1](https://github.com/EduardoJVN/PE-company-backend/commit/fcb23d1556c499632f286bc708ee42a440f91d58))
+* direct deploy dev ([7c0d0c6](https://github.com/EduardoJVN/PE-company-backend/commit/7c0d0c6465baa91441cc1cafe26960cca0ce94dd))
+
 ## [1.2.0](https://github.com/EduardoJVN/PE-company-backend/compare/v1.1.5...v1.2.0) (2026-03-11)
 
 
