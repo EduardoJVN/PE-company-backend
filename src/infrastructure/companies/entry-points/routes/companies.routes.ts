@@ -63,5 +63,15 @@ export function createCompanyRoutes(
     sendHttpResponse(res, result);
   });
 
+  router.get('/:id', async (req, res) => {
+    const result = await controller.getById(toAuthenticatedRequest(req, res));
+    sendHttpResponse(res, result);
+  });
+
+  router.put('/:id', async (req, res) => {
+    const result = await controller.update(toAuthenticatedRequest(req, res));
+    sendHttpResponse(res, result);
+  });
+
   return router;
 }

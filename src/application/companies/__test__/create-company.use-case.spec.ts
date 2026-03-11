@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CreateCompanyUseCase } from '@application/companies/create-company.use-case.js';
 import type {
   ICompanyRepository,
-  CreateCompanyData,
-  CreateMemberData,
   CompanyResult,
 } from '@domain/companies/ports/company-repository.port.js';
+import type { Company } from '@domain/companies/entities/company.entity.js';
+import type { CompanyMember } from '@domain/companies/entities/company-member.entity.js';
 import {
   CompanyStatusId,
   CompanyMemberRoleId,
@@ -26,6 +26,10 @@ const mockCompanyResult: CompanyResult = {
 
 const mockRepo: ICompanyRepository = {
   createWithOwner: vi.fn().mockResolvedValue(mockCompanyResult),
+  update: vi.fn(),
+  findByMemberId: vi.fn(),
+  findByIdForMember: vi.fn(),
+  findMemberByUserAndCompany: vi.fn(),
 };
 
 const baseInput = { ownerId: 'owner-uuid', name: 'Acme Corp', sectorIds: [1] };
@@ -38,12 +42,12 @@ describe('CreateCompanyUseCase', () => {
     useCase = new CreateCompanyUseCase(mockRepo);
   });
 
-  it('creates company with ACTIVE status', async () => {
+  it('creates company entity with ACTIVE status', async () => {
     await useCase.execute(baseInput);
 
     const [companyArg] = vi.mocked(mockRepo.createWithOwner).mock.calls[0] as [
-      CreateCompanyData,
-      CreateMemberData,
+      Company,
+      CompanyMember,
     ];
 
     expect(companyArg.statusId).toBe(CompanyStatusId.ACTIVE);
@@ -55,8 +59,8 @@ describe('CreateCompanyUseCase', () => {
     await useCase.execute(baseInput);
 
     const [companyArg, memberArg] = vi.mocked(mockRepo.createWithOwner).mock.calls[0] as [
-      CreateCompanyData,
-      CreateMemberData,
+      Company,
+      CompanyMember,
     ];
 
     expect(memberArg.userId).toBe('owner-uuid');
@@ -65,12 +69,26 @@ describe('CreateCompanyUseCase', () => {
     expect(memberArg.statusId).toBe(CompanyMemberStatusId.ACTIVE);
   });
 
+  it('owner member has no invitation data', async () => {
+    await useCase.execute(baseInput);
+
+    const [, memberArg] = vi.mocked(mockRepo.createWithOwner).mock.calls[0] as [
+      Company,
+      CompanyMember,
+    ];
+
+    expect(memberArg.invitedAt).toBeNull();
+    expect(memberArg.invitedBy).toBeNull();
+    expect(memberArg.acceptedAt).toBeNull();
+    expect(memberArg.acceptedBy).toBeNull();
+  });
+
   it('generates distinct UUIDs for company and member', async () => {
     await useCase.execute(baseInput);
 
     const [companyArg, memberArg] = vi.mocked(mockRepo.createWithOwner).mock.calls[0] as [
-      CreateCompanyData,
-      CreateMemberData,
+      Company,
+      CompanyMember,
     ];
 
     expect(companyArg.id).toBeTruthy();
@@ -78,7 +96,7 @@ describe('CreateCompanyUseCase', () => {
     expect(companyArg.id).not.toBe(memberArg.id);
   });
 
-  it('passes all fields to repository', async () => {
+  it('passes all fields to the company entity', async () => {
     await useCase.execute({
       ownerId: 'owner-uuid',
       name: 'Acme Corp',
@@ -88,8 +106,8 @@ describe('CreateCompanyUseCase', () => {
     });
 
     const [companyArg] = vi.mocked(mockRepo.createWithOwner).mock.calls[0] as [
-      CreateCompanyData,
-      CreateMemberData,
+      Company,
+      CompanyMember,
     ];
 
     expect(companyArg.description).toBe('Una empresa increíble');

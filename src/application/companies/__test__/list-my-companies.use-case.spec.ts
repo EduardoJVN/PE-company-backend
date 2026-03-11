@@ -20,7 +20,10 @@ const mockCompany: CompanyResult = {
 
 const mockRepo: ICompanyRepository = {
   createWithOwner: vi.fn(),
+  update: vi.fn(),
   findByMemberId: vi.fn().mockResolvedValue([mockCompany]),
+  findByIdForMember: vi.fn(),
+  findMemberByUserAndCompany: vi.fn(),
 };
 
 describe('ListMyCompaniesUseCase', () => {

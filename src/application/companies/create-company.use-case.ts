@@ -1,9 +1,6 @@
 import { uuidv7 } from 'uuidv7';
-import {
-  CompanyStatusId,
-  CompanyMemberRoleId,
-  CompanyMemberStatusId,
-} from '@domain/catalog-ids.js';
+import { Company } from '@domain/companies/entities/company.entity.js';
+import { CompanyMember } from '@domain/companies/entities/company-member.entity.js';
 import type {
   ICompanyRepository,
   CompanyResult,
@@ -24,23 +21,17 @@ export class CreateCompanyUseCase {
     const companyId = uuidv7();
     const memberId = uuidv7();
 
-    return this.companyRepo.createWithOwner(
-      {
-        id: companyId,
-        ownerId: input.ownerId,
-        name: input.name,
-        description: input.description,
-        logoUrl: input.logoUrl,
-        statusId: CompanyStatusId.ACTIVE,
-        sectorIds: input.sectorIds,
-      },
-      {
-        id: memberId,
-        companyId,
-        userId: input.ownerId,
-        roleId: CompanyMemberRoleId.OWNER,
-        statusId: CompanyMemberStatusId.ACTIVE,
-      },
+    const company = Company.create(
+      companyId,
+      input.ownerId,
+      input.name,
+      input.sectorIds,
+      input.description,
+      input.logoUrl,
     );
+
+    const member = CompanyMember.createOwner(memberId, company.id, input.ownerId);
+
+    return this.companyRepo.createWithOwner(company, member);
   }
 }

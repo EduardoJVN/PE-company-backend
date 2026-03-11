@@ -1,4 +1,5 @@
 import { DomainError } from '@shared/errors/domain.error.js';
+import { ForbiddenError } from '@shared/errors/forbidden.error.js';
 import { NotFoundError } from '@shared/errors/not-found.error.js';
 
 export interface HttpRequest {
@@ -47,6 +48,8 @@ export abstract class BaseController {
     } catch (error) {
       if (error instanceof NotFoundError) {
         return onError({ status: 404, message: error.message });
+      } else if (error instanceof ForbiddenError) {
+        return onError({ status: 403, message: error.message });
       } else if (error instanceof DomainError) {
         return onError({ status: 400, message: error.message });
       } else {
