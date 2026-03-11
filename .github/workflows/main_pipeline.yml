@@ -2,9 +2,8 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
@@ -40,8 +39,8 @@ jobs:
   build-check:
     name: 🏗️ Build Verification
     needs: quality-check
-    runs-on: ubuntu-latest
     if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -52,6 +51,20 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: 🏗️ Build
         run: yarn build
+
+  release-please:
+    name: 🔖 Release Please
+    needs: build-check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: node
 
   deploy:
     name: 🚀 Deploy → ${{ github.event.inputs.environment }} (${{ github.event.inputs.tag }})
