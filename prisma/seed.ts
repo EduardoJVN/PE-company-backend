@@ -75,6 +75,15 @@ async function main() {
       (4, 'INACTIVE', NOW(), NOW());
     `);
 
+    // 6. sectores de empresas
+    await tx.$executeRawUnsafe(`
+      INSERT INTO "industry_types" (id, name, created_at, updated_at) VALUES
+      (1, 'TECNOLOGIA', NOW(), NOW()),
+      (2, 'PASTELERIA', NOW(), NOW()),
+      (3, 'COMIDA', NOW(), NOW()),
+      (4, 'SALUD', NOW(), NOW());
+    `);
+
     // 2. Insertar usuario de prueba
     await tx.$executeRawUnsafe(`
       INSERT INTO "users" (id, email, password, status_id, role_id, register_type_id, is_active, created_at, updated_at) VALUES
