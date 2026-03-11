@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1](https://github.com/EduardoJVN/PE-company-backend/compare/v1.1.0...v1.1.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* build ([47d6575](https://github.com/EduardoJVN/PE-company-backend/commit/47d6575bb330804a9fc466a1e6ac39f194cf8f26))
+* build ([246e67e](https://github.com/EduardoJVN/PE-company-backend/commit/246e67e972facb99288eef0b903bd66a65ec5f96))
+* delete release please ([c3e5572](https://github.com/EduardoJVN/PE-company-backend/commit/c3e5572c48063467d3399b88a41f96b9040f3f16))
+
 ## [1.1.0](https://github.com/EduardoJVN/PE-company-backend/compare/v1.0.0...v1.1.0) (2026-03-11)
 
 
