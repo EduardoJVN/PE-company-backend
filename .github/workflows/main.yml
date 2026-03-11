@@ -1,27 +1,16 @@
-name: CI/CD Pipeline
+name: Main Pipeline
 
 on:
   push:
-    branches: ['**']
+    branches: [main]
+    tags: ['v*']
   pull_request:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Entorno destino'
-        required: true
-        type: choice
-        options:
-          - develop
-          - qa
-          - prod
-      tag:
-        description: 'Tag a deployar (ej: v1.2.0)'
-        required: true
+    branches: [main]
 
 jobs:
   quality-check:
     name: 🔍 Calidad (Lint & Test)
-    if: github.event_name != 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +28,7 @@ jobs:
   build-check:
     name: 🏗️ Build Verification
     needs: quality-check
-    if: github.event_name != 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,18 +56,15 @@ jobs:
           release-type: node
 
   deploy:
-    name: 🚀 Deploy → ${{ github.event.inputs.environment }} (${{ github.event.inputs.tag }})
-    if: github.event_name == 'workflow_dispatch'
+    name: 🚀 Build & Push to GHCR (${{ github.ref_name }})
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
     permissions:
       contents: read
       packages: write
     steps:
-      - name: ⬇️ Checkout ${{ github.event.inputs.tag }}
+      - name: ⬇️ Checkout ${{ github.ref_name }}
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.tag }}
 
       - name: 🔐 Login to GHCR
         uses: docker/login-action@v3
@@ -91,23 +77,12 @@ jobs:
         id: vars
         run: |
           REPO="${GITHUB_REPOSITORY,,}"
-          ENV="${{ github.event.inputs.environment }}"
-          TAG="${{ github.event.inputs.tag }}"
-
-          case "$ENV" in
-            develop) ENV_TAG="dev" ;;
-            qa)      ENV_TAG="qa"  ;;
-            prod)    ENV_TAG="$TAG" ;;
-          esac
-
-          DOCKER_TAGS="ghcr.io/${REPO}:${ENV_TAG}"
-          if [[ "$ENV" == "prod" ]]; then
-            DOCKER_TAGS="${DOCKER_TAGS}"$'\n'"ghcr.io/${REPO}:latest"
-          fi
-
-          echo "env_tag=${ENV_TAG}" >> $GITHUB_OUTPUT
+          TAG="${{ github.ref_name }}"
           echo "tags<<EOF" >> $GITHUB_OUTPUT
-          echo "$DOCKER_TAGS" >> $GITHUB_OUTPUT
+          echo "ghcr.io/${REPO}:dev" >> $GITHUB_OUTPUT
+          echo "ghcr.io/${REPO}:qa" >> $GITHUB_OUTPUT
+          echo "ghcr.io/${REPO}:${TAG}" >> $GITHUB_OUTPUT
+          echo "ghcr.io/${REPO}:latest" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: 🏗️ Build and Push Image
@@ -118,5 +93,4 @@ jobs:
           tags: ${{ steps.vars.outputs.tags }}
 
       - name: ✅ Summary
-        run: |
-          echo "✅ Imagen deployada a ${{ github.event.inputs.environment }} con tag: ${{ steps.vars.outputs.env_tag }}"
+        run: echo "✅ Imagen publicada con tags: dev, qa, ${{ github.ref_name }}, latest"
