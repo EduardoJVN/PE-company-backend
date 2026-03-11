@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/EduardoJVN/PE-company-backend/compare/v1.2.1...v1.3.0) (2026-03-11)
+
+
+### Features
+
+* add company ([3c359c6](https://github.com/EduardoJVN/PE-company-backend/commit/3c359c617ff4a23e6b88795fab764e402b0195f2))
+* add industry type seed ([de9c8d1](https://github.com/EduardoJVN/PE-company-backend/commit/de9c8d1137841f1d4c6d67064ac2dd9cee2749e1))
+
+
+### Bug Fixes
+
+* test ([9c497e0](https://github.com/EduardoJVN/PE-company-backend/commit/9c497e07f0d0e968163261e9658859b9f6deeeef))
+
 ## [1.2.1](https://github.com/EduardoJVN/PE-company-backend/compare/v1.2.0...v1.2.1) (2026-03-11)
 
 
