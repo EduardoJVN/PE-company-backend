@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/EduardoJVN/PE-company-backend/compare/v1.0.0...v1.1.0) (2026-03-11)
+
+
+### Features
+
+* health url status app name ([42e42b3](https://github.com/EduardoJVN/PE-company-backend/commit/42e42b3881fb5425beb89478823c6e859b13e045))
+
+
+### Bug Fixes
+
+* deploy ([2622fd0](https://github.com/EduardoJVN/PE-company-backend/commit/2622fd0f60910b8895ca2365f0936a8caddb69fb))
+
 ## 1.0.0 (2026-03-10)
 
 
