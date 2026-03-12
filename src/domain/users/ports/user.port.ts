@@ -1,3 +1,5 @@
+import type { User } from '@domain/users/entities/user.entity.js';
+
 export interface UserResult {
   id: string;
   email: string;
@@ -6,6 +8,6 @@ export interface UserResult {
 
 export interface IUserPort {
   findByEmail(email: string): Promise<UserResult | null>;
-  createInvited(id: string, email: string): Promise<UserResult>;
+  createInvited(user: User): Promise<UserResult>;
   upsertInviteToken(id: string, userId: string, tokenHash: string, expiresAt: Date): Promise<void>;
 }

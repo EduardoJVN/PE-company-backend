@@ -9,7 +9,14 @@ import type {
 } from '@domain/companies/ports/company-repository.port.js';
 import type { IUserPort, UserResult } from '@domain/users/ports/user.port.js';
 import type { IEmailSender } from '@domain/ports/email-sender.port.js';
-import { CompanyMemberRoleId, CompanyMemberStatusId } from '@domain/catalog-ids.js';
+import {
+  CompanyMemberRoleId,
+  CompanyMemberStatusId,
+  UserStatusId,
+  UserRoleId,
+  RegisterTypeId,
+} from '@domain/catalog-ids.js';
+import { User } from '@domain/users/entities/user.entity.js';
 
 const ownerMember: CompanyMemberResult = {
   id: 'owner-member-uuid',
@@ -121,6 +128,12 @@ describe('InviteCompanyMemberUseCase', () => {
     await useCase.execute(baseInput);
 
     expect(vi.mocked(mockUserPort.createInvited)).toHaveBeenCalledOnce();
+    const userArg = vi.mocked(mockUserPort.createInvited).mock.calls[0][0];
+    expect(userArg).toBeInstanceOf(User);
+    expect(userArg.email).toBe(baseInput.email);
+    expect(userArg.statusId).toBe(UserStatusId.CHANGE_PASSWORD);
+    expect(userArg.roleId).toBe(UserRoleId.USER);
+    expect(userArg.registerTypeId).toBe(RegisterTypeId.EMAIL);
   });
 
   it('does not create a user when email already exists', async () => {

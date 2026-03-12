@@ -6,7 +6,7 @@ import {
 } from '@infra/companies/entry-points/middlewares/company-context.middleware.js';
 import type { ICompanyRepository } from '@domain/companies/ports/company-repository.port.js';
 import type { ICompanyMembershipCache } from '@domain/companies/ports/company-membership-cache.port.js';
-import { CompanyMemberRoleId } from '@domain/catalog-ids.js';
+import { CompanyMemberRoleId, CompanyMemberStatusId } from '@domain/catalog-ids.js';
 
 function makeReq(headers: Record<string, string> = {}): Request {
   return { headers } as unknown as Request;
@@ -25,7 +25,7 @@ const mockMember = {
   companyId: 'company-uuid',
   userId: 'user-uuid',
   roleId: CompanyMemberRoleId.OWNER,
-  statusId: 2,
+  statusId: CompanyMemberStatusId.ACTIVE,
   invitedAt: null,
   invitedBy: null,
   acceptedAt: null,

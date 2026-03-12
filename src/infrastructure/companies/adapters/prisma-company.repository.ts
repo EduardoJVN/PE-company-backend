@@ -122,7 +122,7 @@ export class PrismaCompanyRepository implements ICompanyRepository {
   }
 
   async updateMemberRole(member: CompanyMember): Promise<CompanyMemberResult> {
-    return this.db.companyMember.update({
+    const result = await this.db.companyMember.update({
       where: { id: member.id },
       data: { roleId: member.roleId },
       select: {
@@ -137,6 +137,7 @@ export class PrismaCompanyRepository implements ICompanyRepository {
         acceptedBy: true,
       },
     });
+    return result as CompanyMemberResult;
   }
 
   async removeMember(member: CompanyMember): Promise<void> {
@@ -157,7 +158,7 @@ export class PrismaCompanyRepository implements ICompanyRepository {
     companyId: string,
     userId: string,
   ): Promise<CompanyMemberResult | null> {
-    return this.db.companyMember.findFirst({
+    const result = await this.db.companyMember.findFirst({
       where: {
         companyId,
         userId,
@@ -175,13 +176,14 @@ export class PrismaCompanyRepository implements ICompanyRepository {
         acceptedBy: true,
       },
     });
+    return result as CompanyMemberResult | null;
   }
 
   async findMemberByUserAndCompanyAnyStatus(
     companyId: string,
     userId: string,
   ): Promise<CompanyMemberResult | null> {
-    return this.db.companyMember.findFirst({
+    const result = await this.db.companyMember.findFirst({
       where: { companyId, userId },
       select: {
         id: true,
@@ -195,10 +197,11 @@ export class PrismaCompanyRepository implements ICompanyRepository {
         acceptedBy: true,
       },
     });
+    return result as CompanyMemberResult | null;
   }
 
   async inviteMember(member: CompanyMember): Promise<CompanyMemberResult> {
-    return this.db.companyMember.create({
+    const result = await this.db.companyMember.create({
       data: {
         id: member.id,
         companyId: member.companyId,
@@ -222,5 +225,6 @@ export class PrismaCompanyRepository implements ICompanyRepository {
         acceptedBy: true,
       },
     });
+    return result as CompanyMemberResult;
   }
 }

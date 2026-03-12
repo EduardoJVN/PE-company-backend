@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
-import { UserStatusId } from '@domain/catalog-ids.js';
 import type { IUserPort, UserResult } from '@domain/users/ports/user.port.js';
+import type { User } from '@domain/users/entities/user.entity.js';
 
 const COMPANY_INVITE_TOKEN_TYPE = 'COMPANY_INVITE';
 
@@ -14,12 +14,14 @@ export class PrismaUserPort implements IUserPort {
     });
   }
 
-  async createInvited(id: string, email: string): Promise<UserResult> {
+  async createInvited(user: User): Promise<UserResult> {
     return this.db.user.create({
       data: {
-        id,
-        email,
-        statusId: UserStatusId.CHANGE_PASSWORD,
+        id: user.id,
+        email: user.email,
+        statusId: user.statusId,
+        roleId: user.roleId,
+        registerTypeId: user.registerTypeId,
       },
       select: { id: true, email: true, statusId: true },
     });

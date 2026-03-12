@@ -1,6 +1,7 @@
 import { randomBytes, createHash } from 'node:crypto';
 import { uuidv7 } from 'uuidv7';
 import { CompanyMember } from '@domain/companies/entities/company-member.entity.js';
+import { User } from '@domain/users/entities/user.entity.js';
 import { CompanyNotFoundError } from '@domain/companies/errors/company-not-found.error.js';
 import { UnauthorizedCompanyAccessError } from '@domain/companies/errors/unauthorized-company-access.error.js';
 import { MemberAlreadyInCompanyError } from '@domain/companies/errors/member-already-in-company.error.js';
@@ -57,7 +58,7 @@ export class InviteCompanyMemberUseCase {
       const existing = await this.companyRepo.findMemberByUserAndCompany(input.companyId, user.id);
       if (existing) throw new MemberAlreadyInCompanyError(input.email);
     } else {
-      user = await this.userPort.createInvited(uuidv7(), input.email);
+      user = await this.userPort.createInvited(User.createInvited(uuidv7(), input.email));
     }
 
     const member = CompanyMember.createInvited(
