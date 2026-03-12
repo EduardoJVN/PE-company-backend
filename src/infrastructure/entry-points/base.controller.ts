@@ -1,6 +1,7 @@
 import { DomainError } from '@shared/errors/domain.error.js';
 import { ForbiddenError } from '@shared/errors/forbidden.error.js';
 import { NotFoundError } from '@shared/errors/not-found.error.js';
+import type { CompanyMemberRoleId } from '@domain/catalog-ids.js';
 
 export interface HttpRequest {
   body?: unknown;
@@ -13,6 +14,11 @@ export interface HttpRequest {
 
 export interface AuthenticatedRequest extends HttpRequest {
   userId: string;
+}
+
+export interface CompanyContextRequest extends AuthenticatedRequest {
+  companyId: string;
+  companyRoleId: CompanyMemberRoleId;
 }
 
 export interface ResponseCookie {

@@ -42,7 +42,14 @@ export function createServer(
   });
 
   // --- Companies ---
-  app.use('/companies', createCompanyRoutes(companies.companyController, jwtMiddleware));
+  app.use(
+    '/companies',
+    createCompanyRoutes(
+      companies.companyController,
+      jwtMiddleware,
+      companies.companyContextMiddleware,
+    ),
+  );
 
   // 404 handler — no route matched
   app.use((_req, res) => {

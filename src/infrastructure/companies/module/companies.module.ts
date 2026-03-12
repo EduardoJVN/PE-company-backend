@@ -1,3 +1,4 @@
+import type { RequestHandler } from 'express';
 import { prisma } from '@infra/config/prisma.js';
 import { ENV } from '@infra/config/env.config.js';
 import { PrismaCompanyRepository } from '@infra/companies/adapters/prisma-company.repository.js';
@@ -12,9 +13,12 @@ import { RemoveCompanyMemberUseCase } from '@application/companies/remove-compan
 import { ActivateCompanyMemberUseCase } from '@application/companies/activate-company-member.use-case.js';
 import { InviteCompanyMemberUseCase } from '@application/companies/invite-company-member.use-case.js';
 import { CompanyController } from '@infra/companies/entry-points/company.controller.js';
+import { createCompanyContextMiddleware } from '@infra/companies/entry-points/middlewares/company-context.middleware.js';
+import { InMemoryCompanyMembershipCache } from '@infra/companies/adapters/in-memory-company-membership.cache.js';
 
 export interface CompaniesModule {
   companyController: CompanyController;
+  companyContextMiddleware: RequestHandler;
 }
 
 export function createCompaniesModule(): CompaniesModule {
@@ -45,5 +49,10 @@ export function createCompaniesModule(): CompaniesModule {
     ENV.FRONTEND_URL,
   );
 
-  return { companyController };
+  const membershipCache = new InMemoryCompanyMembershipCache();
+
+  return {
+    companyController,
+    companyContextMiddleware: createCompanyContextMiddleware(companyRepo, membershipCache),
+  };
 }
