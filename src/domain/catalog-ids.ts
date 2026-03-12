@@ -11,6 +11,8 @@ export const UserStatusId = {
   PENDING: 1,
   ACTIVE: 2,
   SUSPENDED: 3,
+  CHANGE_PASSWORD: 4, //este status significa que fue invitado por un admin u owner y debe cambiar su contraseña para terminar el registro de usuario, despues debe ir por el flujo normal de register
+  INACTIVE: 5,
 } as const;
 
 export type UserStatusId = (typeof UserStatusId)[keyof typeof UserStatusId];
@@ -55,6 +57,8 @@ export const CompanyMemberStatusId = {
   ACTIVE: 2,
   SUSPENDED: 3,
   INACTIVE: 4,
+  REJECTED: 5,
+  DELETED: 6,
 } as const;
 
 export type CompanyMemberStatus =

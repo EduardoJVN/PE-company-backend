@@ -1,9 +1,12 @@
 import type { PrismaClient } from '@prisma/client';
+import { CompanyMemberStatusId } from '@domain/catalog-ids.js';
+import type { Company } from '@domain/companies/entities/company.entity.js';
+import type { CompanyMember } from '@domain/companies/entities/company-member.entity.js';
 import type {
   ICompanyRepository,
-  CreateCompanyData,
-  CreateMemberData,
   CompanyResult,
+  CompanyDetailResult,
+  CompanyMemberResult,
 } from '@domain/companies/ports/company-repository.port.js';
 
 const companySelect = {
@@ -18,20 +21,26 @@ const companySelect = {
   createdAt: true,
 } as const;
 
+const companyDetailSelect = {
+  ...companySelect,
+  updatedAt: true,
+  verifiedAt: true,
+  verifiedBy: true,
+  deletedAt: true,
+  sectors: { select: { sector: { select: { id: true, name: true } } } },
+} as const;
+
 export class PrismaCompanyRepository implements ICompanyRepository {
   constructor(private readonly db: PrismaClient) {}
 
-  async createWithOwner(
-    company: CreateCompanyData,
-    member: CreateMemberData,
-  ): Promise<CompanyResult> {
+  async createWithOwner(company: Company, member: CompanyMember): Promise<CompanyResult> {
     return this.db.company.create({
       data: {
         id: company.id,
         ownerId: company.ownerId,
         name: company.name,
-        description: company.description ?? null,
-        logoUrl: company.logoUrl ?? null,
+        description: company.description,
+        logoUrl: company.logoUrl,
         statusId: company.statusId,
         sectors: { create: company.sectorIds.map((sectorId) => ({ sectorId })) },
         members: {
@@ -40,10 +49,182 @@ export class PrismaCompanyRepository implements ICompanyRepository {
             userId: member.userId,
             roleId: member.roleId,
             statusId: member.statusId,
+            invitedAt: member.invitedAt,
+            invitedBy: member.invitedBy,
+            acceptedAt: member.acceptedAt,
+            acceptedBy: member.acceptedBy,
           },
         },
       },
       select: companySelect,
     });
+  }
+
+  async update(company: Company): Promise<CompanyResult> {
+    return this.db.company.update({
+      where: { id: company.id },
+      data: {
+        name: company.name,
+        description: company.description,
+        logoUrl: company.logoUrl,
+        updatedAt: company.updatedAt,
+      },
+      select: companySelect,
+    });
+  }
+
+  async findByMemberId(userId: string): Promise<CompanyResult[]> {
+    return this.db.company.findMany({
+      where: {
+        members: {
+          some: {
+            userId,
+            statusId: CompanyMemberStatusId.ACTIVE,
+          },
+        },
+      },
+      select: companySelect,
+    });
+  }
+
+  async findByIdForMember(companyId: string, userId: string): Promise<CompanyDetailResult | null> {
+    const company = await this.db.company.findFirst({
+      where: {
+        id: companyId,
+        members: {
+          some: {
+            userId,
+            statusId: CompanyMemberStatusId.ACTIVE,
+          },
+        },
+      },
+      select: companyDetailSelect,
+    });
+
+    if (!company) return null;
+
+    return {
+      id: company.id,
+      ownerId: company.ownerId,
+      name: company.name,
+      description: company.description,
+      logoUrl: company.logoUrl,
+      statusId: company.statusId,
+      isActive: company.isActive,
+      isVerified: company.isVerified,
+      createdAt: company.createdAt,
+      updatedAt: company.updatedAt,
+      verifiedAt: company.verifiedAt,
+      verifiedBy: company.verifiedBy,
+      deletedAt: company.deletedAt,
+      sectors: company.sectors.map((s) => s.sector),
+    };
+  }
+
+  async updateMemberRole(member: CompanyMember): Promise<CompanyMemberResult> {
+    const result = await this.db.companyMember.update({
+      where: { id: member.id },
+      data: { roleId: member.roleId },
+      select: {
+        id: true,
+        companyId: true,
+        userId: true,
+        roleId: true,
+        statusId: true,
+        invitedAt: true,
+        invitedBy: true,
+        acceptedAt: true,
+        acceptedBy: true,
+      },
+    });
+    return result as CompanyMemberResult;
+  }
+
+  async removeMember(member: CompanyMember): Promise<void> {
+    await this.db.companyMember.update({
+      where: { id: member.id },
+      data: { statusId: member.statusId },
+    });
+  }
+
+  async activateMember(member: CompanyMember): Promise<void> {
+    await this.db.companyMember.update({
+      where: { id: member.id },
+      data: { statusId: member.statusId },
+    });
+  }
+
+  async findMemberByUserAndCompany(
+    companyId: string,
+    userId: string,
+  ): Promise<CompanyMemberResult | null> {
+    const result = await this.db.companyMember.findFirst({
+      where: {
+        companyId,
+        userId,
+        statusId: CompanyMemberStatusId.ACTIVE,
+      },
+      select: {
+        id: true,
+        companyId: true,
+        userId: true,
+        roleId: true,
+        statusId: true,
+        invitedAt: true,
+        invitedBy: true,
+        acceptedAt: true,
+        acceptedBy: true,
+      },
+    });
+    return result as CompanyMemberResult | null;
+  }
+
+  async findMemberByUserAndCompanyAnyStatus(
+    companyId: string,
+    userId: string,
+  ): Promise<CompanyMemberResult | null> {
+    const result = await this.db.companyMember.findFirst({
+      where: { companyId, userId },
+      select: {
+        id: true,
+        companyId: true,
+        userId: true,
+        roleId: true,
+        statusId: true,
+        invitedAt: true,
+        invitedBy: true,
+        acceptedAt: true,
+        acceptedBy: true,
+      },
+    });
+    return result as CompanyMemberResult | null;
+  }
+
+  async inviteMember(member: CompanyMember): Promise<CompanyMemberResult> {
+    const result = await this.db.companyMember.create({
+      data: {
+        id: member.id,
+        companyId: member.companyId,
+        userId: member.userId,
+        roleId: member.roleId,
+        statusId: member.statusId,
+        invitedAt: member.invitedAt,
+        invitedBy: member.invitedBy,
+        acceptedAt: member.acceptedAt,
+        acceptedBy: member.acceptedBy,
+      },
+      select: {
+        id: true,
+        companyId: true,
+        userId: true,
+        roleId: true,
+        statusId: true,
+        invitedAt: true,
+        invitedBy: true,
+        acceptedAt: true,
+        acceptedBy: true,
+      },
+    });
+    return result as CompanyMemberResult;
   }
 }

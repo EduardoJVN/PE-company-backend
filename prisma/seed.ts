@@ -32,11 +32,14 @@ async function main() {
     `);
 
     // 3. Insertar Estados de Usuario
+    // si es change password es porque fue invitado por un admin y debe cambiar su contraseña para activar su cuenta
     await tx.$executeRawUnsafe(`
       INSERT INTO "user_status" (id, name, created_at, updated_at) VALUES
       (1, 'PENDING', NOW(), NOW()),
       (2, 'ACTIVE', NOW(), NOW()),
-      (3, 'SUSPENDED', NOW(), NOW());
+      (3, 'SUSPENDED', NOW(), NOW()),
+      (4, 'CHANGE_PASSWORD', NOW(), NOW()), 
+      (5, 'INACTIVE', NOW(), NOW());
     `);
 
     // 4. Insertar Tipos de Registro
@@ -72,7 +75,9 @@ async function main() {
       (1, 'PENDING', NOW(), NOW()),
       (2, 'ACTIVE', NOW(), NOW()),
       (3, 'SUSPENDED', NOW(), NOW()),
-      (4, 'INACTIVE', NOW(), NOW());
+      (4, 'INACTIVE', NOW(), NOW()),
+      (5, 'REJECTED', NOW(), NOW()),
+      (6, 'DELETED', NOW(), NOW());
     `);
 
     // 6. sectores de empresas

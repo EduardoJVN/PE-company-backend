@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { BaseController } from '@infra/entry-points/base.controller.js';
 import type { HttpResponse, ErrorResponse } from '@infra/entry-points/base.controller.js';
 import { DomainError } from '@shared/errors/domain.error.js';
+import { ForbiddenError } from '@shared/errors/forbidden.error.js';
 import { NotFoundError } from '@shared/errors/not-found.error.js';
 
 class TestNotFoundError extends NotFoundError {
@@ -13,6 +14,12 @@ class TestNotFoundError extends NotFoundError {
 class TestDomainError extends DomainError {
   constructor() {
     super('business rule violated');
+  }
+}
+
+class TestForbiddenError extends ForbiddenError {
+  constructor() {
+    super('access denied');
   }
 }
 
@@ -45,6 +52,13 @@ describe('BaseController', () => {
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: 'resource not found' });
+  });
+
+  it('returns 403 when a ForbiddenError is thrown', async () => {
+    const response = await controller.run(() => Promise.reject(new TestForbiddenError()));
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({ error: 'access denied' });
   });
 
   it('returns 400 when a generic DomainError is thrown', async () => {

@@ -1,5 +1,7 @@
 import { DomainError } from '@shared/errors/domain.error.js';
+import { ForbiddenError } from '@shared/errors/forbidden.error.js';
 import { NotFoundError } from '@shared/errors/not-found.error.js';
+import type { CompanyMemberRoleId } from '@domain/catalog-ids.js';
 
 export interface HttpRequest {
   body?: unknown;
@@ -12,6 +14,11 @@ export interface HttpRequest {
 
 export interface AuthenticatedRequest extends HttpRequest {
   userId: string;
+}
+
+export interface CompanyContextRequest extends AuthenticatedRequest {
+  companyId: string;
+  companyRoleId: CompanyMemberRoleId;
 }
 
 export interface ResponseCookie {
@@ -47,6 +54,8 @@ export abstract class BaseController {
     } catch (error) {
       if (error instanceof NotFoundError) {
         return onError({ status: 404, message: error.message });
+      } else if (error instanceof ForbiddenError) {
+        return onError({ status: 403, message: error.message });
       } else if (error instanceof DomainError) {
         return onError({ status: 400, message: error.message });
       } else {

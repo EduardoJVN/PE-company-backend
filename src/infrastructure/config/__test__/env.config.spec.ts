@@ -21,6 +21,8 @@ describe('env.config', () => {
       'postgresql://testuser:testpass@localhost:6543/testdb?pgbouncer=true';
     process.env.DIRECT_URL = 'postgresql://testuser:testpass@localhost:5432/testdb';
     process.env.FRONTEND_URL = 'http://localhost:3000';
+    process.env.RESEND_API_KEY = 'test-resend-key';
+    process.env.RESEND_FROM_EMAIL = 'noreply@example.com';
   };
 
   it('populates JWT_PRIVATE_KEY and JWT_PUBLIC_KEY when both are present', async () => {
@@ -118,6 +120,33 @@ describe('env.config', () => {
       expect(ENV.LOG_LEVEL).toBe(level);
       vi.resetModules();
     }
+  });
+
+  it('throws when RESEND_API_KEY is missing in non-test env', async () => {
+    prodEnv();
+    delete process.env.RESEND_API_KEY;
+
+    await expect(import('@infra/config/env.config.js')).rejects.toThrow(
+      'Missing required environment variable: RESEND_API_KEY',
+    );
+  });
+
+  it('throws when RESEND_FROM_EMAIL is missing in non-test env', async () => {
+    prodEnv();
+    delete process.env.RESEND_FROM_EMAIL;
+
+    await expect(import('@infra/config/env.config.js')).rejects.toThrow(
+      'Missing required environment variable: RESEND_FROM_EMAIL',
+    );
+  });
+
+  it('throws when RESEND_FROM_EMAIL is not a valid email in non-test env', async () => {
+    prodEnv();
+    process.env.RESEND_FROM_EMAIL = 'not-an-email';
+
+    await expect(import('@infra/config/env.config.js')).rejects.toThrow(
+      'Missing required environment variable: RESEND_FROM_EMAIL',
+    );
   });
 
   it('throws when LOG_LEVEL has an invalid value', async () => {
