@@ -27,6 +27,8 @@ const mockRepo: ICompanyRepository = {
   findMemberByUserAndCompanyAnyStatus: vi.fn(),
   updateMemberRole: vi.fn(),
   removeMember: vi.fn(),
+  suspendMember: vi.fn(),
+  unsuspendMember: vi.fn(),
   activateMember: vi.fn(),
   inviteMember: vi.fn(),
 };

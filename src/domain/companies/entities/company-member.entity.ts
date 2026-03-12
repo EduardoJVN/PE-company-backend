@@ -1,8 +1,10 @@
 import { CompanyMemberRoleId, CompanyMemberStatusId } from '@domain/catalog-ids.js';
 import { CannotChangeOwnerRoleError } from '@domain/companies/errors/cannot-change-owner-role.error.js';
+import { CannotAssignOwnerRoleError } from '@domain/companies/errors/cannot-assign-owner-role.error.js';
 import { CannotSuspendOwnerError } from '@domain/companies/errors/cannot-suspend-owner.error.js';
 import { CannotRemoveOwnerError } from '@domain/companies/errors/cannot-remove-owner.error.js';
 import { MemberNotDeletedError } from '@domain/companies/errors/member-not-deleted.error.js';
+import { MemberNotSuspendedError } from '@domain/companies/errors/member-not-suspended.error.js';
 
 export class CompanyMember {
   private constructor(
@@ -70,6 +72,7 @@ export class CompanyMember {
 
   changeRole(newRoleId: number): CompanyMember {
     if (this.roleId === CompanyMemberRoleId.OWNER) throw new CannotChangeOwnerRoleError();
+    if (newRoleId === CompanyMemberRoleId.OWNER) throw new CannotAssignOwnerRoleError();
     return new CompanyMember(
       this.id,
       this.companyId,
@@ -91,6 +94,22 @@ export class CompanyMember {
       this.userId,
       this.roleId,
       CompanyMemberStatusId.SUSPENDED,
+      this.invitedAt,
+      this.invitedBy,
+      this.acceptedAt,
+      this.acceptedBy,
+    );
+  }
+
+  unsuspend(): CompanyMember {
+    if (this.statusId !== CompanyMemberStatusId.SUSPENDED)
+      throw new MemberNotSuspendedError(this.userId);
+    return new CompanyMember(
+      this.id,
+      this.companyId,
+      this.userId,
+      this.roleId,
+      CompanyMemberStatusId.ACTIVE,
       this.invitedAt,
       this.invitedBy,
       this.acceptedAt,

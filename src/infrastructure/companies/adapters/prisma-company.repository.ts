@@ -147,6 +147,20 @@ export class PrismaCompanyRepository implements ICompanyRepository {
     });
   }
 
+  async suspendMember(member: CompanyMember): Promise<void> {
+    await this.db.companyMember.update({
+      where: { id: member.id },
+      data: { statusId: member.statusId },
+    });
+  }
+
+  async unsuspendMember(member: CompanyMember): Promise<void> {
+    await this.db.companyMember.update({
+      where: { id: member.id },
+      data: { statusId: member.statusId },
+    });
+  }
+
   async activateMember(member: CompanyMember): Promise<void> {
     await this.db.companyMember.update({
       where: { id: member.id },

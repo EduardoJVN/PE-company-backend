@@ -35,12 +35,14 @@ function makeMockDb(
   findFirstResult: unknown = null,
   updateResult: CompanyResult | null = null,
   memberFindFirstResult: unknown = null,
+  memberUpdateResult: unknown = undefined,
 ) {
   const mockCreate = vi.fn().mockResolvedValue(createResult);
   const mockUpdate = vi.fn().mockResolvedValue(updateResult ?? createResult);
   const mockFindMany = vi.fn().mockResolvedValue(findManyResult);
   const mockFindFirst = vi.fn().mockResolvedValue(findFirstResult);
   const mockMemberFindFirst = vi.fn().mockResolvedValue(memberFindFirstResult);
+  const mockMemberUpdate = vi.fn().mockResolvedValue(memberUpdateResult);
   const mockDb = {
     company: {
       create: mockCreate,
@@ -48,10 +50,18 @@ function makeMockDb(
       findMany: mockFindMany,
       findFirst: mockFindFirst,
     },
-    companyMember: { findFirst: mockMemberFindFirst },
+    companyMember: { findFirst: mockMemberFindFirst, update: mockMemberUpdate },
   } as unknown as PrismaClient;
 
-  return { mockDb, mockCreate, mockUpdate, mockFindMany, mockFindFirst, mockMemberFindFirst };
+  return {
+    mockDb,
+    mockCreate,
+    mockUpdate,
+    mockFindMany,
+    mockFindFirst,
+    mockMemberFindFirst,
+    mockMemberUpdate,
+  };
 }
 
 // Raw shape returned by Prisma before mapping
@@ -389,5 +399,103 @@ describe('PrismaCompanyRepository.findMemberByUserAndCompany', () => {
     const result = await repo.findMemberByUserAndCompany('company-uuid', 'non-member-uuid');
 
     expect(result).toBeNull();
+  });
+});
+
+describe('PrismaCompanyRepository.suspendMember', () => {
+  let repo: PrismaCompanyRepository;
+
+  const suspendedEntity = CompanyMember.reconstitute(
+    'member-uuid',
+    'company-uuid',
+    'owner-uuid',
+    CompanyMemberRoleId.EDITOR,
+    CompanyMemberStatusId.SUSPENDED,
+    null,
+    null,
+    null,
+    null,
+  );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('calls companyMember.update once', async () => {
+    const { mockDb, mockMemberUpdate } = makeMockDb(dbResult, [], null, null, null);
+    repo = new PrismaCompanyRepository(mockDb);
+
+    await repo.suspendMember(suspendedEntity);
+
+    expect(mockMemberUpdate).toHaveBeenCalledOnce();
+  });
+
+  it('updates statusId using member id as the where clause', async () => {
+    const { mockDb, mockMemberUpdate } = makeMockDb(dbResult, [], null, null, null);
+    repo = new PrismaCompanyRepository(mockDb);
+
+    await repo.suspendMember(suspendedEntity);
+
+    const callArg = mockMemberUpdate.mock.calls[0][0];
+    expect(callArg.where.id).toBe('member-uuid');
+    expect(callArg.data.statusId).toBe(CompanyMemberStatusId.SUSPENDED);
+  });
+
+  it('resolves without returning a value', async () => {
+    const { mockDb } = makeMockDb(dbResult, [], null, null, null);
+    repo = new PrismaCompanyRepository(mockDb);
+
+    const result = await repo.suspendMember(suspendedEntity);
+
+    expect(result).toBeUndefined();
+  });
+});
+
+describe('PrismaCompanyRepository.unsuspendMember', () => {
+  let repo: PrismaCompanyRepository;
+
+  const unsuspendedEntity = CompanyMember.reconstitute(
+    'member-uuid',
+    'company-uuid',
+    'editor-uuid',
+    CompanyMemberRoleId.EDITOR,
+    CompanyMemberStatusId.ACTIVE,
+    null,
+    null,
+    null,
+    null,
+  );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('calls companyMember.update once', async () => {
+    const { mockDb, mockMemberUpdate } = makeMockDb(dbResult, [], null, null, null);
+    repo = new PrismaCompanyRepository(mockDb);
+
+    await repo.unsuspendMember(unsuspendedEntity);
+
+    expect(mockMemberUpdate).toHaveBeenCalledOnce();
+  });
+
+  it('updates statusId using member id as the where clause', async () => {
+    const { mockDb, mockMemberUpdate } = makeMockDb(dbResult, [], null, null, null);
+    repo = new PrismaCompanyRepository(mockDb);
+
+    await repo.unsuspendMember(unsuspendedEntity);
+
+    const callArg = mockMemberUpdate.mock.calls[0][0];
+    expect(callArg.where.id).toBe('member-uuid');
+    expect(callArg.data.statusId).toBe(CompanyMemberStatusId.ACTIVE);
+  });
+
+  it('resolves without returning a value', async () => {
+    const { mockDb } = makeMockDb(dbResult, [], null, null, null);
+    repo = new PrismaCompanyRepository(mockDb);
+
+    const result = await repo.unsuspendMember(unsuspendedEntity);
+
+    expect(result).toBeUndefined();
   });
 });

@@ -17,6 +17,7 @@ import {
   RegisterTypeId,
 } from '@domain/catalog-ids.js';
 import { User } from '@domain/users/entities/user.entity.js';
+import { EmailVerificationToken } from '@domain/auth/entities/email-verification-token.entity.js';
 
 const ownerMember: CompanyMemberResult = {
   id: 'owner-member-uuid',
@@ -71,6 +72,8 @@ const mockRepo: ICompanyRepository = {
   update: vi.fn(),
   updateMemberRole: vi.fn(),
   removeMember: vi.fn(),
+  suspendMember: vi.fn(),
+  unsuspendMember: vi.fn(),
   activateMember: vi.fn(),
   findByMemberId: vi.fn(),
   findByIdForMember: vi.fn(),
@@ -82,7 +85,7 @@ const mockRepo: ICompanyRepository = {
 const mockUserPort: IUserPort = {
   findByEmail: vi.fn(),
   createInvited: vi.fn(),
-  upsertInviteToken: vi.fn().mockResolvedValue(undefined),
+  saveEmailVerificationToken: vi.fn().mockResolvedValue(undefined),
 };
 
 const mockEmailSender: IEmailSender = {
@@ -111,9 +114,9 @@ describe('InviteCompanyMemberUseCase', () => {
     vi.mocked(mockRepo.inviteMember).mockResolvedValue(invitedMemberResult);
     vi.mocked(mockUserPort.findByEmail).mockResolvedValue(null);
     vi.mocked(mockUserPort.createInvited).mockResolvedValue(newUserResult);
-    vi.mocked(mockUserPort.upsertInviteToken).mockResolvedValue(undefined);
+    vi.mocked(mockUserPort.saveEmailVerificationToken).mockResolvedValue(undefined);
     vi.mocked(mockEmailSender.send).mockResolvedValue(undefined);
-    useCase = new InviteCompanyMemberUseCase(mockRepo, mockUserPort, mockEmailSender);
+    useCase = new InviteCompanyMemberUseCase(mockRepo, mockUserPort, mockEmailSender, 86_400_000);
   });
 
   it('returns the new member result', async () => {
@@ -154,17 +157,17 @@ describe('InviteCompanyMemberUseCase', () => {
     expect(memberArg.acceptedBy).toBe('owner-uuid');
   });
 
-  it('stores an invite token for the user', async () => {
+  it('calls saveEmailVerificationToken with an INVITE EmailVerificationToken for the user', async () => {
     await useCase.execute(baseInput);
 
-    expect(vi.mocked(mockUserPort.upsertInviteToken)).toHaveBeenCalledOnce();
-    const [, userId, tokenHash, expiresAt] = vi.mocked(mockUserPort.upsertInviteToken).mock
-      .calls[0];
-    expect(userId).toBe(newUserResult.id);
-    expect(typeof tokenHash).toBe('string');
-    expect(tokenHash).toHaveLength(64); // sha256 hex
-    expect(expiresAt).toBeInstanceOf(Date);
-    expect(expiresAt.getTime()).toBeGreaterThan(Date.now());
+    expect(vi.mocked(mockUserPort.saveEmailVerificationToken)).toHaveBeenCalledOnce();
+    const tokenArg = vi.mocked(mockUserPort.saveEmailVerificationToken).mock.calls[0][0];
+    expect(tokenArg).toBeInstanceOf(EmailVerificationToken);
+    expect(tokenArg.userId).toBe(newUserResult.id);
+    expect(tokenArg.type).toBe('INVITE');
+    expect(tokenArg.tokenHash).toHaveLength(64);
+    expect(tokenArg.expiresAt).toBeInstanceOf(Date);
+    expect(tokenArg.expiresAt.getTime()).toBeGreaterThan(Date.now());
   });
 
   it('sends an invite email to the invited address', async () => {

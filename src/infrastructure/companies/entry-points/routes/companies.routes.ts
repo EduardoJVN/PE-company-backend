@@ -145,5 +145,25 @@ export function createCompanyRoutes(
     },
   );
 
+  router.patch(
+    '/:id/members/:userId/suspend',
+    companyContextMiddleware,
+    requireCompanyAccess([OWNER, ADMIN]),
+    async (req, res) => {
+      const result = await controller.suspendMember(toCompanyContextRequest(req, res));
+      sendHttpResponse(res, result);
+    },
+  );
+
+  router.patch(
+    '/:id/members/:userId/unsuspend',
+    companyContextMiddleware,
+    requireCompanyAccess([OWNER, ADMIN]),
+    async (req, res) => {
+      const result = await controller.unsuspendMember(toCompanyContextRequest(req, res));
+      sendHttpResponse(res, result);
+    },
+  );
+
   return router;
 }

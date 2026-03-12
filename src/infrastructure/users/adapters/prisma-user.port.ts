@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type { IUserPort, UserResult } from '@domain/users/ports/user.port.js';
 import type { User } from '@domain/users/entities/user.entity.js';
+import type { EmailVerificationToken } from '@domain/auth/entities/email-verification-token.entity.js';
 
 const COMPANY_INVITE_TOKEN_TYPE = 'COMPANY_INVITE';
 
@@ -27,16 +28,23 @@ export class PrismaUserPort implements IUserPort {
     });
   }
 
-  async upsertInviteToken(
-    id: string,
-    userId: string,
-    tokenHash: string,
-    expiresAt: Date,
-  ): Promise<void> {
+  async saveEmailVerificationToken(token: EmailVerificationToken): Promise<void> {
     await this.db.emailVerificationToken.upsert({
-      where: { userId },
-      create: { id, userId, tokenHash, type: COMPANY_INVITE_TOKEN_TYPE, expiresAt },
-      update: { id, tokenHash, type: COMPANY_INVITE_TOKEN_TYPE, expiresAt, usedAt: null },
+      where: { userId: token.userId },
+      create: {
+        id: token.id,
+        userId: token.userId,
+        tokenHash: token.tokenHash,
+        type: COMPANY_INVITE_TOKEN_TYPE,
+        expiresAt: token.expiresAt,
+      },
+      update: {
+        id: token.id,
+        tokenHash: token.tokenHash,
+        type: COMPANY_INVITE_TOKEN_TYPE,
+        expiresAt: token.expiresAt,
+        usedAt: null,
+      },
     });
   }
 }
