@@ -552,6 +552,16 @@ describe('CompanyController.removeMember', () => {
     expect(response.status).toBe(400);
   });
 
+  it('returns 403 when requester lacks permission', async () => {
+    vi.mocked(mockRemoveCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new UnauthorizedCompanyAccessError('company-uuid'),
+    );
+
+    const response = await controller.removeMember(removeReq());
+
+    expect(response.status).toBe(403);
+  });
+
   it('returns 404 when requester is not a company member', async () => {
     vi.mocked(mockRemoveCompanyMemberUseCase.execute).mockRejectedValueOnce(
       new CompanyNotFoundError('company-uuid'),

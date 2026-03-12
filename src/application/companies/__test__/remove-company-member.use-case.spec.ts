@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RemoveCompanyMemberUseCase } from '@application/companies/remove-company-member.use-case.js';
 import { CompanyNotFoundError } from '@domain/companies/errors/company-not-found.error.js';
 import { CompanyMemberNotFoundError } from '@domain/companies/errors/company-member-not-found.error.js';
+import { UnauthorizedCompanyAccessError } from '@domain/companies/errors/unauthorized-company-access.error.js';
 import { CannotRemoveOwnerError } from '@domain/companies/errors/cannot-remove-owner.error.js';
 import type {
   ICompanyRepository,
@@ -113,7 +114,7 @@ describe('RemoveCompanyMemberUseCase', () => {
     ).resolves.not.toThrow();
   });
 
-  it('allows EDITOR requester to remove a member', async () => {
+  it('throws UnauthorizedCompanyAccessError when requester is EDITOR', async () => {
     vi.mocked(mockRepo.findMemberByUserAndCompany).mockImplementation(
       async (_companyId, userId) => {
         if (userId === 'editor-uuid') return editorMember;
@@ -124,21 +125,20 @@ describe('RemoveCompanyMemberUseCase', () => {
 
     await expect(
       useCase.execute({ ...baseInput, requesterId: 'editor-uuid', targetUserId: 'viewer-uuid' }),
-    ).resolves.not.toThrow();
+    ).rejects.toThrow(UnauthorizedCompanyAccessError);
   });
 
-  it('allows VIEWER requester to remove a member', async () => {
+  it('throws UnauthorizedCompanyAccessError when requester is VIEWER', async () => {
     vi.mocked(mockRepo.findMemberByUserAndCompany).mockImplementation(
       async (_companyId, userId) => {
         if (userId === 'viewer-uuid') return viewerMember;
-        if (userId === 'editor-uuid') return editorMember;
         return null;
       },
     );
 
-    await expect(
-      useCase.execute({ ...baseInput, requesterId: 'viewer-uuid', targetUserId: 'editor-uuid' }),
-    ).resolves.not.toThrow();
+    await expect(useCase.execute({ ...baseInput, requesterId: 'viewer-uuid' })).rejects.toThrow(
+      UnauthorizedCompanyAccessError,
+    );
   });
 
   it('throws CompanyNotFoundError when requester is not a company member', async () => {
@@ -174,10 +174,15 @@ describe('RemoveCompanyMemberUseCase', () => {
     ).rejects.toThrow(CannotRemoveOwnerError);
   });
 
-  it('does not call removeMember when requester is not a member of the company', async () => {
-    vi.mocked(mockRepo.findMemberByUserAndCompany).mockResolvedValue(null);
+  it('does not call removeMember when authorization fails', async () => {
+    vi.mocked(mockRepo.findMemberByUserAndCompany).mockImplementation(
+      async (_companyId, userId) => {
+        if (userId === 'editor-uuid') return editorMember;
+        return null;
+      },
+    );
 
-    await useCase.execute(baseInput).catch(() => undefined);
+    await useCase.execute({ ...baseInput, requesterId: 'editor-uuid' }).catch(() => undefined);
 
     expect(vi.mocked(mockRepo.removeMember)).not.toHaveBeenCalled();
   });
