@@ -16,6 +16,8 @@ import type { UpdateCompanyUseCase } from '@application/companies/update-company
 import type { ChangeMemberRoleUseCase } from '@application/companies/change-member-role.use-case.js';
 import type { RemoveCompanyMemberUseCase } from '@application/companies/remove-company-member.use-case.js';
 import type { ActivateCompanyMemberUseCase } from '@application/companies/activate-company-member.use-case.js';
+import type { SuspendCompanyMemberUseCase } from '@application/companies/suspend-company-member.use-case.js';
+import type { UnsuspendCompanyMemberUseCase } from '@application/companies/unsuspend-company-member.use-case.js';
 import type { InviteCompanyMemberUseCase } from '@application/companies/invite-company-member.use-case.js';
 
 export class CompanyController extends BaseController {
@@ -27,6 +29,8 @@ export class CompanyController extends BaseController {
     private readonly changeMemberRoleUseCase: ChangeMemberRoleUseCase,
     private readonly removeCompanyMemberUseCase: RemoveCompanyMemberUseCase,
     private readonly activateCompanyMemberUseCase: ActivateCompanyMemberUseCase,
+    private readonly suspendCompanyMemberUseCase: SuspendCompanyMemberUseCase,
+    private readonly unsuspendCompanyMemberUseCase: UnsuspendCompanyMemberUseCase,
     private readonly inviteCompanyMemberUseCase: InviteCompanyMemberUseCase,
     private readonly frontendUrl: string,
   ) {
@@ -132,6 +136,42 @@ export class CompanyController extends BaseController {
         if (!companyId) throw new ValidationError('Company ID is required');
         if (!targetUserId) throw new ValidationError('User ID is required');
         return this.removeCompanyMemberUseCase.execute({
+          companyId,
+          requesterId: req.userId,
+          targetUserId,
+        });
+      },
+      () => ({ status: 204, body: null }),
+      (error: ErrorResponse) => ({ status: error.status, body: { error: error.message } }),
+    );
+  }
+
+  async suspendMember(req: AuthenticatedRequest): Promise<HttpResponse> {
+    return this.handleRequest(
+      () => {
+        const companyId = req.params?.['id'];
+        const targetUserId = req.params?.['userId'];
+        if (!companyId) throw new ValidationError('Company ID is required');
+        if (!targetUserId) throw new ValidationError('User ID is required');
+        return this.suspendCompanyMemberUseCase.execute({
+          companyId,
+          requesterId: req.userId,
+          targetUserId,
+        });
+      },
+      () => ({ status: 204, body: null }),
+      (error: ErrorResponse) => ({ status: error.status, body: { error: error.message } }),
+    );
+  }
+
+  async unsuspendMember(req: AuthenticatedRequest): Promise<HttpResponse> {
+    return this.handleRequest(
+      () => {
+        const companyId = req.params?.['id'];
+        const targetUserId = req.params?.['userId'];
+        if (!companyId) throw new ValidationError('Company ID is required');
+        if (!targetUserId) throw new ValidationError('User ID is required');
+        return this.unsuspendCompanyMemberUseCase.execute({
           companyId,
           requesterId: req.userId,
           targetUserId,

@@ -4,6 +4,7 @@ import { CompanyNotFoundError } from '@domain/companies/errors/company-not-found
 import { CompanyMemberNotFoundError } from '@domain/companies/errors/company-member-not-found.error.js';
 import { UnauthorizedCompanyAccessError } from '@domain/companies/errors/unauthorized-company-access.error.js';
 import { CannotChangeOwnerRoleError } from '@domain/companies/errors/cannot-change-owner-role.error.js';
+import { CannotAssignOwnerRoleError } from '@domain/companies/errors/cannot-assign-owner-role.error.js';
 import type {
   ICompanyRepository,
   CompanyMemberResult,
@@ -67,6 +68,8 @@ const mockRepo: ICompanyRepository = {
   findMemberByUserAndCompany: vi.fn(),
   findMemberByUserAndCompanyAnyStatus: vi.fn(),
   removeMember: vi.fn(),
+  suspendMember: vi.fn(),
+  unsuspendMember: vi.fn(),
   activateMember: vi.fn(),
   inviteMember: vi.fn(),
 };
@@ -184,6 +187,12 @@ describe('ChangeMemberRoleUseCase', () => {
     await expect(
       useCase.execute({ ...baseInput, targetUserId: 'other-owner-uuid' }),
     ).rejects.toThrow(CannotChangeOwnerRoleError);
+  });
+
+  it('throws CannotAssignOwnerRoleError when trying to assign OWNER role', async () => {
+    await expect(
+      useCase.execute({ ...baseInput, newRoleId: CompanyMemberRoleId.OWNER }),
+    ).rejects.toThrow(CannotAssignOwnerRoleError);
   });
 
   it('does not call updateMemberRole when authorization fails', async () => {

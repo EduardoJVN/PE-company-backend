@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RemoveCompanyMemberUseCase } from '@application/companies/remove-company-member.use-case.js';
+import { SuspendCompanyMemberUseCase } from '@application/companies/suspend-company-member.use-case.js';
 import { CompanyNotFoundError } from '@domain/companies/errors/company-not-found.error.js';
 import { CompanyMemberNotFoundError } from '@domain/companies/errors/company-member-not-found.error.js';
 import { UnauthorizedCompanyAccessError } from '@domain/companies/errors/unauthorized-company-access.error.js';
-import { CannotRemoveOwnerError } from '@domain/companies/errors/cannot-remove-owner.error.js';
+import { CannotSuspendOwnerError } from '@domain/companies/errors/cannot-suspend-owner.error.js';
 import type {
   ICompanyRepository,
   CompanyMemberResult,
@@ -57,14 +57,14 @@ const mockRepo: ICompanyRepository = {
   createWithOwner: vi.fn(),
   update: vi.fn(),
   updateMemberRole: vi.fn(),
-  removeMember: vi.fn().mockResolvedValue(undefined),
-  suspendMember: vi.fn(),
+  removeMember: vi.fn(),
+  suspendMember: vi.fn().mockResolvedValue(undefined),
   unsuspendMember: vi.fn(),
+  activateMember: vi.fn(),
   findByMemberId: vi.fn(),
   findByIdForMember: vi.fn(),
   findMemberByUserAndCompany: vi.fn(),
   findMemberByUserAndCompanyAnyStatus: vi.fn(),
-  activateMember: vi.fn(),
   inviteMember: vi.fn(),
 };
 
@@ -74,8 +74,8 @@ const baseInput = {
   targetUserId: 'editor-uuid',
 };
 
-describe('RemoveCompanyMemberUseCase', () => {
-  let useCase: RemoveCompanyMemberUseCase;
+describe('SuspendCompanyMemberUseCase', () => {
+  let useCase: SuspendCompanyMemberUseCase;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -86,26 +86,45 @@ describe('RemoveCompanyMemberUseCase', () => {
         return null;
       },
     );
-    useCase = new RemoveCompanyMemberUseCase(mockRepo);
+    vi.mocked(mockRepo.suspendMember).mockResolvedValue(undefined);
+    useCase = new SuspendCompanyMemberUseCase(mockRepo);
   });
 
-  it('resolves without error on successful removal', async () => {
+  it('resolves without error on successful suspension', async () => {
     await expect(useCase.execute(baseInput)).resolves.toBeUndefined();
   });
 
-  it('calls removeMember with target member entity holding DELETED status', async () => {
+  it('calls suspendMember with target member entity holding SUSPENDED status', async () => {
     await useCase.execute(baseInput);
 
-    const memberArg = vi.mocked(mockRepo.removeMember).mock.calls[0][0];
+    const memberArg = vi.mocked(mockRepo.suspendMember).mock.calls[0][0];
     expect(memberArg.id).toBe(editorMember.id);
-    expect(memberArg.statusId).toBe(CompanyMemberStatusId.DELETED);
+    expect(memberArg.statusId).toBe(CompanyMemberStatusId.SUSPENDED);
   });
 
-  it('allows OWNER requester to remove a member', async () => {
+  it('uses findMemberByUserAndCompany for requester (ACTIVE filter)', async () => {
+    await useCase.execute(baseInput);
+
+    expect(vi.mocked(mockRepo.findMemberByUserAndCompany)).toHaveBeenCalledWith(
+      'company-uuid',
+      'owner-uuid',
+    );
+  });
+
+  it('uses findMemberByUserAndCompany for target (ACTIVE only)', async () => {
+    await useCase.execute(baseInput);
+
+    expect(vi.mocked(mockRepo.findMemberByUserAndCompany)).toHaveBeenCalledWith(
+      'company-uuid',
+      'editor-uuid',
+    );
+  });
+
+  it('allows OWNER requester to suspend a member', async () => {
     await expect(useCase.execute(baseInput)).resolves.not.toThrow();
   });
 
-  it('allows ADMIN requester to remove a member', async () => {
+  it('allows ADMIN requester to suspend a member', async () => {
     vi.mocked(mockRepo.findMemberByUserAndCompany).mockImplementation(
       async (_companyId, userId) => {
         if (userId === 'admin-uuid') return adminMember;
@@ -152,7 +171,7 @@ describe('RemoveCompanyMemberUseCase', () => {
     await expect(useCase.execute(baseInput)).rejects.toThrow(CompanyNotFoundError);
   });
 
-  it('throws CompanyMemberNotFoundError when target user is not a member', async () => {
+  it('throws CompanyMemberNotFoundError when target user is not an active member', async () => {
     vi.mocked(mockRepo.findMemberByUserAndCompany).mockImplementation(
       async (_companyId, userId) => {
         if (userId === 'owner-uuid') return ownerMember;
@@ -165,7 +184,7 @@ describe('RemoveCompanyMemberUseCase', () => {
     ).rejects.toThrow(CompanyMemberNotFoundError);
   });
 
-  it('throws CannotRemoveOwnerError when target is the owner', async () => {
+  it('throws CannotSuspendOwnerError when target is the owner', async () => {
     vi.mocked(mockRepo.findMemberByUserAndCompany).mockImplementation(
       async (_companyId, userId) => {
         if (userId === 'owner-uuid') return ownerMember;
@@ -176,10 +195,10 @@ describe('RemoveCompanyMemberUseCase', () => {
 
     await expect(
       useCase.execute({ ...baseInput, targetUserId: 'other-owner-uuid' }),
-    ).rejects.toThrow(CannotRemoveOwnerError);
+    ).rejects.toThrow(CannotSuspendOwnerError);
   });
 
-  it('does not call removeMember when authorization fails', async () => {
+  it('does not call suspendMember when authorization fails', async () => {
     vi.mocked(mockRepo.findMemberByUserAndCompany).mockImplementation(
       async (_companyId, userId) => {
         if (userId === 'editor-uuid') return editorMember;
@@ -189,6 +208,6 @@ describe('RemoveCompanyMemberUseCase', () => {
 
     await useCase.execute({ ...baseInput, requesterId: 'editor-uuid' }).catch(() => undefined);
 
-    expect(vi.mocked(mockRepo.removeMember)).not.toHaveBeenCalled();
+    expect(vi.mocked(mockRepo.suspendMember)).not.toHaveBeenCalled();
   });
 });

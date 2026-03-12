@@ -1,7 +1,8 @@
-import { randomBytes, createHash } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { uuidv7 } from 'uuidv7';
 import { CompanyMember } from '@domain/companies/entities/company-member.entity.js';
 import { User } from '@domain/users/entities/user.entity.js';
+import { EmailVerificationToken } from '@domain/auth/entities/email-verification-token.entity.js';
 import { CompanyNotFoundError } from '@domain/companies/errors/company-not-found.error.js';
 import { UnauthorizedCompanyAccessError } from '@domain/companies/errors/unauthorized-company-access.error.js';
 import { MemberAlreadyInCompanyError } from '@domain/companies/errors/member-already-in-company.error.js';
@@ -12,8 +13,6 @@ import type {
 import type { IUserPort } from '@domain/users/ports/user.port.js';
 import type { IEmailSender } from '@domain/ports/email-sender.port.js';
 import { buildCompanyInviteEmail } from '@application/companies/emails/company-invite.email.js';
-
-const INVITE_TOKEN_TTL_DAYS = 7;
 
 export interface InviteCompanyMemberInput {
   companyId: string;
@@ -28,6 +27,7 @@ export class InviteCompanyMemberUseCase {
     private readonly companyRepo: ICompanyRepository,
     private readonly userPort: IUserPort,
     private readonly emailSender: IEmailSender,
+    private readonly inviteTokenTtlMs: number,
   ) {}
 
   async execute(input: InviteCompanyMemberInput): Promise<CompanyMemberResult> {
@@ -71,11 +71,17 @@ export class InviteCompanyMemberUseCase {
 
     const savedMember = await this.companyRepo.inviteMember(member);
 
-    const rawToken = randomBytes(32).toString('hex');
+    const rawToken = randomUUID();
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');
-    const expiresAt = new Date(Date.now() + INVITE_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
-
-    await this.userPort.upsertInviteToken(uuidv7(), user.id, tokenHash, expiresAt);
+    const expiresAt = new Date(Date.now() + this.inviteTokenTtlMs);
+    const inviteToken = EmailVerificationToken.create(
+      uuidv7(),
+      user.id,
+      tokenHash,
+      'INVITE',
+      expiresAt,
+    );
+    await this.userPort.saveEmailVerificationToken(inviteToken);
 
     const inviteUrl = `${input.frontendUrl}/invite/accept?token=${rawToken}&companyId=${input.companyId}`;
 

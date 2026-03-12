@@ -44,6 +44,8 @@ export interface ICompanyRepository {
   update(company: Company): Promise<CompanyResult>;
   updateMemberRole(member: CompanyMember): Promise<CompanyMemberResult>;
   removeMember(member: CompanyMember): Promise<void>;
+  suspendMember(member: CompanyMember): Promise<void>;
+  unsuspendMember(member: CompanyMember): Promise<void>;
   activateMember(member: CompanyMember): Promise<void>;
   findByMemberId(userId: string): Promise<CompanyResult[]>;
   findByIdForMember(companyId: string, userId: string): Promise<CompanyDetailResult | null>;

@@ -7,6 +7,8 @@ import type { UpdateCompanyUseCase } from '@application/companies/update-company
 import type { ChangeMemberRoleUseCase } from '@application/companies/change-member-role.use-case.js';
 import type { RemoveCompanyMemberUseCase } from '@application/companies/remove-company-member.use-case.js';
 import type { ActivateCompanyMemberUseCase } from '@application/companies/activate-company-member.use-case.js';
+import type { SuspendCompanyMemberUseCase } from '@application/companies/suspend-company-member.use-case.js';
+import type { UnsuspendCompanyMemberUseCase } from '@application/companies/unsuspend-company-member.use-case.js';
 import type { InviteCompanyMemberUseCase } from '@application/companies/invite-company-member.use-case.js';
 import type {
   CompanyResult,
@@ -25,6 +27,8 @@ import { UnauthorizedCompanyAccessError } from '@domain/companies/errors/unautho
 import { CannotChangeOwnerRoleError } from '@domain/companies/errors/cannot-change-owner-role.error.js';
 import { CannotRemoveOwnerError } from '@domain/companies/errors/cannot-remove-owner.error.js';
 import { MemberNotDeletedError } from '@domain/companies/errors/member-not-deleted.error.js';
+import { CannotSuspendOwnerError } from '@domain/companies/errors/cannot-suspend-owner.error.js';
+import { MemberNotSuspendedError } from '@domain/companies/errors/member-not-suspended.error.js';
 
 const mockResult: CompanyResult = {
   id: 'company-uuid',
@@ -87,6 +91,14 @@ const mockActivateCompanyMemberUseCase = {
   execute: vi.fn().mockResolvedValue(undefined),
 } as unknown as ActivateCompanyMemberUseCase;
 
+const mockSuspendCompanyMemberUseCase = {
+  execute: vi.fn().mockResolvedValue(undefined),
+} as unknown as SuspendCompanyMemberUseCase;
+
+const mockUnsuspendCompanyMemberUseCase = {
+  execute: vi.fn().mockResolvedValue(undefined),
+} as unknown as UnsuspendCompanyMemberUseCase;
+
 const mockInviteCompanyMemberUseCase = {
   execute: vi.fn(),
 } as unknown as InviteCompanyMemberUseCase;
@@ -103,6 +115,8 @@ function makeController() {
     mockChangeMemberRoleUseCase,
     mockRemoveCompanyMemberUseCase,
     mockActivateCompanyMemberUseCase,
+    mockSuspendCompanyMemberUseCase,
+    mockUnsuspendCompanyMemberUseCase,
     mockInviteCompanyMemberUseCase,
     'https://app.example.com',
   );
@@ -697,6 +711,210 @@ describe('CompanyController.activateMember', () => {
     );
 
     const response = await controller.activateMember(activateReq());
+
+    expect(response.status).toBe(500);
+  });
+});
+
+describe('CompanyController.suspendMember', () => {
+  let controller: CompanyController;
+
+  const suspendReq = (
+    companyId = 'company-uuid',
+    userId = 'editor-uuid',
+  ): AuthenticatedRequest => ({
+    userId: 'owner-uuid',
+    params: { id: companyId, userId },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    controller = makeController();
+  });
+
+  it('returns 204 with no body on successful suspension', async () => {
+    const response = await controller.suspendMember(suspendReq());
+
+    expect(response.status).toBe(204);
+    expect(response.body).toBeNull();
+  });
+
+  it('calls use case with companyId, requesterId and targetUserId', async () => {
+    await controller.suspendMember(suspendReq());
+
+    expect(vi.mocked(mockSuspendCompanyMemberUseCase.execute)).toHaveBeenCalledWith({
+      companyId: 'company-uuid',
+      requesterId: 'owner-uuid',
+      targetUserId: 'editor-uuid',
+    });
+  });
+
+  it('returns 400 when company id param is missing', async () => {
+    const response = await controller.suspendMember({
+      userId: 'owner-uuid',
+      params: { userId: 'editor-uuid' },
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when userId param is missing', async () => {
+    const response = await controller.suspendMember({
+      userId: 'owner-uuid',
+      params: { id: 'company-uuid' },
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when target is the owner (CannotSuspendOwnerError)', async () => {
+    vi.mocked(mockSuspendCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new CannotSuspendOwnerError(),
+    );
+
+    const response = await controller.suspendMember(suspendReq());
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 403 when requester lacks permission', async () => {
+    vi.mocked(mockSuspendCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new UnauthorizedCompanyAccessError('company-uuid'),
+    );
+
+    const response = await controller.suspendMember(suspendReq());
+
+    expect(response.status).toBe(403);
+  });
+
+  it('returns 404 when requester is not a company member', async () => {
+    vi.mocked(mockSuspendCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new CompanyNotFoundError('company-uuid'),
+    );
+
+    const response = await controller.suspendMember(suspendReq());
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 404 when target user is not an active member', async () => {
+    vi.mocked(mockSuspendCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new CompanyMemberNotFoundError('editor-uuid'),
+    );
+
+    const response = await controller.suspendMember(suspendReq());
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 500 when use case throws unexpected error', async () => {
+    vi.mocked(mockSuspendCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new Error('DB failure'),
+    );
+
+    const response = await controller.suspendMember(suspendReq());
+
+    expect(response.status).toBe(500);
+  });
+});
+
+describe('CompanyController.unsuspendMember', () => {
+  let controller: CompanyController;
+
+  const unsuspendReq = (
+    companyId = 'company-uuid',
+    userId = 'editor-uuid',
+  ): AuthenticatedRequest => ({
+    userId: 'owner-uuid',
+    params: { id: companyId, userId },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    controller = makeController();
+  });
+
+  it('returns 204 with no body on successful unsuspension', async () => {
+    const response = await controller.unsuspendMember(unsuspendReq());
+
+    expect(response.status).toBe(204);
+    expect(response.body).toBeNull();
+  });
+
+  it('calls use case with companyId, requesterId and targetUserId', async () => {
+    await controller.unsuspendMember(unsuspendReq());
+
+    expect(vi.mocked(mockUnsuspendCompanyMemberUseCase.execute)).toHaveBeenCalledWith({
+      companyId: 'company-uuid',
+      requesterId: 'owner-uuid',
+      targetUserId: 'editor-uuid',
+    });
+  });
+
+  it('returns 400 when company id param is missing', async () => {
+    const response = await controller.unsuspendMember({
+      userId: 'owner-uuid',
+      params: { userId: 'editor-uuid' },
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when userId param is missing', async () => {
+    const response = await controller.unsuspendMember({
+      userId: 'owner-uuid',
+      params: { id: 'company-uuid' },
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when target is not in SUSPENDED status (MemberNotSuspendedError)', async () => {
+    vi.mocked(mockUnsuspendCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new MemberNotSuspendedError('editor-uuid'),
+    );
+
+    const response = await controller.unsuspendMember(unsuspendReq());
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 403 when requester lacks permission', async () => {
+    vi.mocked(mockUnsuspendCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new UnauthorizedCompanyAccessError('company-uuid'),
+    );
+
+    const response = await controller.unsuspendMember(unsuspendReq());
+
+    expect(response.status).toBe(403);
+  });
+
+  it('returns 404 when requester is not an active company member', async () => {
+    vi.mocked(mockUnsuspendCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new CompanyNotFoundError('company-uuid'),
+    );
+
+    const response = await controller.unsuspendMember(unsuspendReq());
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 404 when target user has no membership record', async () => {
+    vi.mocked(mockUnsuspendCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new CompanyMemberNotFoundError('editor-uuid'),
+    );
+
+    const response = await controller.unsuspendMember(unsuspendReq());
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 500 when use case throws unexpected error', async () => {
+    vi.mocked(mockUnsuspendCompanyMemberUseCase.execute).mockRejectedValueOnce(
+      new Error('DB failure'),
+    );
+
+    const response = await controller.unsuspendMember(unsuspendReq());
 
     expect(response.status).toBe(500);
   });

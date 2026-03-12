@@ -1,4 +1,5 @@
 import type { User } from '@domain/users/entities/user.entity.js';
+import type { EmailVerificationToken } from '@domain/auth/entities/email-verification-token.entity.js';
 
 export interface UserResult {
   id: string;
@@ -9,5 +10,5 @@ export interface UserResult {
 export interface IUserPort {
   findByEmail(email: string): Promise<UserResult | null>;
   createInvited(user: User): Promise<UserResult>;
-  upsertInviteToken(id: string, userId: string, tokenHash: string, expiresAt: Date): Promise<void>;
+  saveEmailVerificationToken(token: EmailVerificationToken): Promise<void>;
 }

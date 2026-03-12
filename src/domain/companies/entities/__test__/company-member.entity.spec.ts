@@ -2,9 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { CompanyMember } from '@domain/companies/entities/company-member.entity.js';
 import { CompanyMemberRoleId, CompanyMemberStatusId } from '@domain/catalog-ids.js';
 import { CannotChangeOwnerRoleError } from '@domain/companies/errors/cannot-change-owner-role.error.js';
+import { CannotAssignOwnerRoleError } from '@domain/companies/errors/cannot-assign-owner-role.error.js';
 import { CannotSuspendOwnerError } from '@domain/companies/errors/cannot-suspend-owner.error.js';
 import { CannotRemoveOwnerError } from '@domain/companies/errors/cannot-remove-owner.error.js';
 import { MemberNotDeletedError } from '@domain/companies/errors/member-not-deleted.error.js';
+import { MemberNotSuspendedError } from '@domain/companies/errors/member-not-suspended.error.js';
 
 describe('CompanyMember.createOwner', () => {
   it('creates a member with OWNER role', () => {
@@ -259,6 +261,22 @@ describe('CompanyMember.changeRole', () => {
 
     expect(() => owner.changeRole(CompanyMemberRoleId.ADMIN)).toThrow(CannotChangeOwnerRoleError);
   });
+
+  it('throws CannotAssignOwnerRoleError when assigning OWNER role to a non-owner', () => {
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      CompanyMemberStatusId.ACTIVE,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    expect(() => member.changeRole(CompanyMemberRoleId.OWNER)).toThrow(CannotAssignOwnerRoleError);
+  });
 });
 
 describe('CompanyMember.suspend', () => {
@@ -305,6 +323,83 @@ describe('CompanyMember.suspend', () => {
     const owner = CompanyMember.createOwner('id', 'company-id', 'user-id');
 
     expect(() => owner.suspend()).toThrow(CannotSuspendOwnerError);
+  });
+});
+
+describe('CompanyMember.unsuspend', () => {
+  it('returns a new member with ACTIVE status when SUSPENDED', () => {
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      CompanyMemberStatusId.SUSPENDED,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    const unsuspended = member.unsuspend();
+
+    expect(unsuspended).not.toBe(member);
+    expect(unsuspended.statusId).toBe(CompanyMemberStatusId.ACTIVE);
+  });
+
+  it('preserves all other fields after unsuspend', () => {
+    const invitedAt = new Date('2026-01-01');
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.ADMIN,
+      CompanyMemberStatusId.SUSPENDED,
+      invitedAt,
+      'inviter-id',
+      null,
+      null,
+    );
+
+    const unsuspended = member.unsuspend();
+
+    expect(unsuspended.id).toBe(member.id);
+    expect(unsuspended.roleId).toBe(member.roleId);
+    expect(unsuspended.userId).toBe(member.userId);
+    expect(unsuspended.companyId).toBe(member.companyId);
+    expect(unsuspended.invitedAt).toEqual(invitedAt);
+    expect(unsuspended.invitedBy).toBe('inviter-id');
+  });
+
+  it('throws MemberNotSuspendedError when member is ACTIVE', () => {
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      CompanyMemberStatusId.ACTIVE,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    expect(() => member.unsuspend()).toThrow(MemberNotSuspendedError);
+  });
+
+  it('throws MemberNotSuspendedError when member is DELETED', () => {
+    const member = CompanyMember.reconstitute(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      CompanyMemberStatusId.DELETED,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    expect(() => member.unsuspend()).toThrow(MemberNotSuspendedError);
   });
 });
 
