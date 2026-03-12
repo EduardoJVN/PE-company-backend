@@ -61,6 +61,7 @@ const mockRepo: ICompanyRepository = {
   findByIdForMember: vi.fn(),
   findMemberByUserAndCompany: vi.fn(),
   findMemberByUserAndCompanyAnyStatus: vi.fn(),
+  inviteMember: vi.fn(),
 };
 
 const baseInput = {

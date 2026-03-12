@@ -71,6 +71,11 @@ const mockRepo: ICompanyRepository = {
   findByMemberId: vi.fn(),
   findByIdForMember: vi.fn().mockResolvedValue(mockDetail),
   findMemberByUserAndCompany: vi.fn().mockResolvedValue(ownerMemberResult),
+  findMemberByUserAndCompanyAnyStatus: vi.fn(),
+  updateMemberRole: vi.fn(),
+  removeMember: vi.fn(),
+  activateMember: vi.fn(),
+  inviteMember: vi.fn(),
 };
 
 const baseInput = { companyId: 'company-uuid', userId: 'owner-uuid', name: 'Updated Name' };

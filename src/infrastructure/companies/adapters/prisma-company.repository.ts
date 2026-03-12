@@ -196,4 +196,31 @@ export class PrismaCompanyRepository implements ICompanyRepository {
       },
     });
   }
+
+  async inviteMember(member: CompanyMember): Promise<CompanyMemberResult> {
+    return this.db.companyMember.create({
+      data: {
+        id: member.id,
+        companyId: member.companyId,
+        userId: member.userId,
+        roleId: member.roleId,
+        statusId: member.statusId,
+        invitedAt: member.invitedAt,
+        invitedBy: member.invitedBy,
+        acceptedAt: member.acceptedAt,
+        acceptedBy: member.acceptedBy,
+      },
+      select: {
+        id: true,
+        companyId: true,
+        userId: true,
+        roleId: true,
+        statusId: true,
+        invitedAt: true,
+        invitedBy: true,
+        acceptedAt: true,
+        acceptedBy: true,
+      },
+    });
+  }
 }

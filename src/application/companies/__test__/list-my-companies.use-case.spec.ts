@@ -24,6 +24,11 @@ const mockRepo: ICompanyRepository = {
   findByMemberId: vi.fn().mockResolvedValue([mockCompany]),
   findByIdForMember: vi.fn(),
   findMemberByUserAndCompany: vi.fn(),
+  findMemberByUserAndCompanyAnyStatus: vi.fn(),
+  updateMemberRole: vi.fn(),
+  removeMember: vi.fn(),
+  activateMember: vi.fn(),
+  inviteMember: vi.fn(),
 };
 
 describe('ListMyCompaniesUseCase', () => {

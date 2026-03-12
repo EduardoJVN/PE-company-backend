@@ -3,6 +3,7 @@ import { ValidationError } from '@shared/errors/validation.error.js';
 import { createCompanyBodySchema } from '@infra/companies/entry-points/schemas/create-company.schema.js';
 import { updateCompanyBodySchema } from '@infra/companies/entry-points/schemas/update-company.schema.js';
 import { changeMemberRoleBodySchema } from '@infra/companies/entry-points/schemas/change-member-role.schema.js';
+import { inviteMemberBodySchema } from '@infra/companies/entry-points/schemas/invite-member.schema.js';
 import type {
   AuthenticatedRequest,
   HttpResponse,
@@ -15,6 +16,7 @@ import type { UpdateCompanyUseCase } from '@application/companies/update-company
 import type { ChangeMemberRoleUseCase } from '@application/companies/change-member-role.use-case.js';
 import type { RemoveCompanyMemberUseCase } from '@application/companies/remove-company-member.use-case.js';
 import type { ActivateCompanyMemberUseCase } from '@application/companies/activate-company-member.use-case.js';
+import type { InviteCompanyMemberUseCase } from '@application/companies/invite-company-member.use-case.js';
 
 export class CompanyController extends BaseController {
   constructor(
@@ -25,6 +27,8 @@ export class CompanyController extends BaseController {
     private readonly changeMemberRoleUseCase: ChangeMemberRoleUseCase,
     private readonly removeCompanyMemberUseCase: RemoveCompanyMemberUseCase,
     private readonly activateCompanyMemberUseCase: ActivateCompanyMemberUseCase,
+    private readonly inviteCompanyMemberUseCase: InviteCompanyMemberUseCase,
+    private readonly frontendUrl: string,
   ) {
     super();
   }
@@ -134,6 +138,28 @@ export class CompanyController extends BaseController {
         });
       },
       () => ({ status: 204, body: null }),
+      (error: ErrorResponse) => ({ status: error.status, body: { error: error.message } }),
+    );
+  }
+
+  async inviteMember(req: AuthenticatedRequest): Promise<HttpResponse> {
+    return this.handleRequest(
+      () => {
+        const companyId = req.params?.['id'];
+        if (!companyId) throw new ValidationError('Company ID is required');
+        const parsed = inviteMemberBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          throw new ValidationError(parsed.error.issues.map((i) => i.message).join(', '));
+        }
+        return this.inviteCompanyMemberUseCase.execute({
+          companyId,
+          requesterId: req.userId,
+          email: parsed.data.email,
+          roleId: parsed.data.roleId,
+          frontendUrl: this.frontendUrl,
+        });
+      },
+      (result) => ({ status: 201, body: result }),
       (error: ErrorResponse) => ({ status: error.status, body: { error: error.message } }),
     );
   }

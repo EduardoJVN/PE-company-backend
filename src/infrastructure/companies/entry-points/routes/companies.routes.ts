@@ -73,6 +73,11 @@ export function createCompanyRoutes(
     sendHttpResponse(res, result);
   });
 
+  router.post('/:id/members/invite', async (req, res) => {
+    const result = await controller.inviteMember(toAuthenticatedRequest(req, res));
+    sendHttpResponse(res, result);
+  });
+
   router.put('/:id/members/:userId/role', async (req, res) => {
     const result = await controller.changeMemberRole(toAuthenticatedRequest(req, res));
     sendHttpResponse(res, result);

@@ -54,4 +54,5 @@ export interface ICompanyRepository {
     companyId: string,
     userId: string,
   ): Promise<CompanyMemberResult | null>;
+  inviteMember(member: CompanyMember): Promise<CompanyMemberResult>;
 }

@@ -19,6 +19,8 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   DATABASE_URL: isTest ? z.string().default('') : z.string().min(1),
   DIRECT_URL: isTest ? z.string().default('') : z.string().min(1),
+  RESEND_API_KEY: isTest ? z.string().default('') : z.string().min(1),
+  RESEND_FROM_EMAIL: isTest ? z.string().default('noreply@example.com') : z.string().email(),
 });
 
 const result = EnvSchema.safeParse(process.env);
@@ -41,4 +43,6 @@ export const ENV = {
   LOG_LEVEL: result.data.LOG_LEVEL,
   DATABASE_URL: result.data.DATABASE_URL,
   DIRECT_URL: result.data.DIRECT_URL,
+  RESEND_API_KEY: result.data.RESEND_API_KEY,
+  RESEND_FROM_EMAIL: result.data.RESEND_FROM_EMAIL,
 };

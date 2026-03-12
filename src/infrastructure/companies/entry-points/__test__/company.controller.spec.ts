@@ -7,6 +7,7 @@ import type { UpdateCompanyUseCase } from '@application/companies/update-company
 import type { ChangeMemberRoleUseCase } from '@application/companies/change-member-role.use-case.js';
 import type { RemoveCompanyMemberUseCase } from '@application/companies/remove-company-member.use-case.js';
 import type { ActivateCompanyMemberUseCase } from '@application/companies/activate-company-member.use-case.js';
+import type { InviteCompanyMemberUseCase } from '@application/companies/invite-company-member.use-case.js';
 import type {
   CompanyResult,
   CompanyDetailResult,
@@ -86,6 +87,10 @@ const mockActivateCompanyMemberUseCase = {
   execute: vi.fn().mockResolvedValue(undefined),
 } as unknown as ActivateCompanyMemberUseCase;
 
+const mockInviteCompanyMemberUseCase = {
+  execute: vi.fn(),
+} as unknown as InviteCompanyMemberUseCase;
+
 const validBody = { name: 'Acme Corp', sectorIds: [1] };
 const baseReq = (body: unknown): AuthenticatedRequest => ({ body, userId: 'owner-uuid' });
 
@@ -98,6 +103,8 @@ function makeController() {
     mockChangeMemberRoleUseCase,
     mockRemoveCompanyMemberUseCase,
     mockActivateCompanyMemberUseCase,
+    mockInviteCompanyMemberUseCase,
+    'https://app.example.com',
   );
 }
 

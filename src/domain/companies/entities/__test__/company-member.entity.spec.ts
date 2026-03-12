@@ -37,6 +37,73 @@ describe('CompanyMember.createOwner', () => {
   });
 });
 
+describe('CompanyMember.createInvited', () => {
+  it('creates a member with the given roleId', () => {
+    const member = CompanyMember.createInvited(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      'inviter-id',
+    );
+
+    expect(member.roleId).toBe(CompanyMemberRoleId.EDITOR);
+  });
+
+  it('creates a member with ACTIVE status', () => {
+    const member = CompanyMember.createInvited(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.ADMIN,
+      'inviter-id',
+    );
+
+    expect(member.statusId).toBe(CompanyMemberStatusId.ACTIVE);
+  });
+
+  it('sets invitedBy and acceptedBy to the inviter', () => {
+    const member = CompanyMember.createInvited(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.VIEWER,
+      'inviter-id',
+    );
+
+    expect(member.invitedBy).toBe('inviter-id');
+    expect(member.acceptedBy).toBe('inviter-id');
+  });
+
+  it('sets invitedAt and acceptedAt to the same timestamp', () => {
+    const member = CompanyMember.createInvited(
+      'id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      'inviter-id',
+    );
+
+    expect(member.invitedAt).toBeInstanceOf(Date);
+    expect(member.acceptedAt).toBeInstanceOf(Date);
+    expect(member.invitedAt).toEqual(member.acceptedAt);
+  });
+
+  it('sets all ids correctly', () => {
+    const member = CompanyMember.createInvited(
+      'member-id',
+      'company-id',
+      'user-id',
+      CompanyMemberRoleId.EDITOR,
+      'inviter-id',
+    );
+
+    expect(member.id).toBe('member-id');
+    expect(member.companyId).toBe('company-id');
+    expect(member.userId).toBe('user-id');
+  });
+});
+
 describe('CompanyMember.isActive', () => {
   it('returns true when statusId is ACTIVE', () => {
     const member = CompanyMember.reconstitute(

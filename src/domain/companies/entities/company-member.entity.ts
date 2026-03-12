@@ -35,6 +35,31 @@ export class CompanyMember {
     );
   }
 
+  /**
+   * Creates a member via invitation.
+   * The inviting user acts as both sender and acceptor on behalf of the invited user.
+   */
+  static createInvited(
+    id: string,
+    companyId: string,
+    userId: string,
+    roleId: number,
+    invitedBy: string,
+  ): CompanyMember {
+    const now = new Date();
+    return new CompanyMember(
+      id,
+      companyId,
+      userId,
+      roleId,
+      CompanyMemberStatusId.ACTIVE,
+      now,
+      invitedBy,
+      now,
+      invitedBy,
+    );
+  }
+
   isActive(): boolean {
     return this.statusId === CompanyMemberStatusId.ACTIVE;
   }
