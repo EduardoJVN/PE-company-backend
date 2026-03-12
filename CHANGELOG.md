@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.1](https://github.com/EduardoJVN/PE-company-backend/compare/v1.4.0...v1.4.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* use domain ([83e5e85](https://github.com/EduardoJVN/PE-company-backend/commit/83e5e859cfdd97a5ec3ba8e6670ea56fbc2506ce))
+* use domain ([a44425f](https://github.com/EduardoJVN/PE-company-backend/commit/a44425faee119afd73f96681b63b8c4aee4d00ac))
+
 ## [1.4.0](https://github.com/EduardoJVN/PE-company-backend/compare/v1.3.0...v1.4.0) (2026-03-12)
 
 
