@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.0](https://github.com/EduardoJVN/PE-company-backend/compare/v1.3.0...v1.4.0) (2026-03-12)
+
+
+### Features
+
+* delete and reactive member company ([32bd3e3](https://github.com/EduardoJVN/PE-company-backend/commit/32bd3e3deb702a96df906060b06013297854bf6b))
+* get me company user logged ([ead4fd0](https://github.com/EduardoJVN/PE-company-backend/commit/ead4fd0f14da8a6db89314ea66679867cdd1e9ed))
+* invite company 50% ([146a7b5](https://github.com/EduardoJVN/PE-company-backend/commit/146a7b50e699c2de5027bf42dfd01ffdb6f7928c))
+* middlware valid company ([3ed6e2e](https://github.com/EduardoJVN/PE-company-backend/commit/3ed6e2ec71d3359a28d8bc38afb5d676b16d8c45))
+* update company ([c5904fb](https://github.com/EduardoJVN/PE-company-backend/commit/c5904fbdd63aac8345ff9215274f497b48fa1b18))
+* update route + fix domian intities ([21a267d](https://github.com/EduardoJVN/PE-company-backend/commit/21a267da1e5d0f45ac93e3ad7879d127dd6efd2d))
+
+
+### Bug Fixes
+
+* change members uniq admin and owner ([5392353](https://github.com/EduardoJVN/PE-company-backend/commit/539235333e0048c06d8963c59b506ed44cbcecf7))
+* use domain user ([a57982f](https://github.com/EduardoJVN/PE-company-backend/commit/a57982fed9bdd30c093e002040a413463656ad2f))
+
 ## [1.3.0](https://github.com/EduardoJVN/PE-company-backend/compare/v1.2.1...v1.3.0) (2026-03-11)
 
 
