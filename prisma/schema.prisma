@@ -95,6 +95,7 @@ model User {
   // Relaciones para el flujo de invitaciones en CompanyMember
   invitationsSent         CompanyMember[]         @relation("InvitedBy")
   acceptancesHandled      CompanyMember[]         @relation("AcceptedBy")
+  stockMovementsCreated   StockMovement[]
 
   @@index([email])
   @@map("users")
@@ -177,6 +178,7 @@ model Company {
   // Relaciones
   sectors     CompanySectorMap[]
   members     CompanyMember[]
+  products    Product[]
 
   @@index([name])
   @@map("companies")
@@ -244,47 +246,52 @@ model CompanyMember {
 
 // prodcuts & inventory
 model Category {
-  id        Int             @id @default(autoincrement())
-  name      String
-  parentId  Int?            @map("parent_id")
-  parent    Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  slug      String          @unique
-  children  Category[]      @relation("CategoryHierarchy")
-  products   Product[]
-  createdAt DateTime        @default(now()) @map("created_at")
-  updatedAt DateTime        @updatedAt @map("updated_at")
+  id             Int                      @id @default(autoincrement())
+  name           String
+  parentId       Int?                     @map("parent_id")
+  parent         Category?                @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  slug           String                   @unique
+  children       Category[]               @relation("CategoryHierarchy")
+  products       Product[]
+  specifications CategorySpecDefinition[]
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  updatedAt      DateTime                 @updatedAt @map("updated_at")
+
   @@map("categories")
 }
 
 model CategorySpecDefinition {
   id         Int      @id @default(autoincrement())
-  categoryId Int
+  categoryId Int      @map("category_id")
   category   Category @relation(fields: [categoryId], references: [id])
   name       String   // Ej: "ram"
   label      String   // Ej: "Memoria RAM"
   options    Json     // Ej: ["4GB", "8GB", "16GB"] - Opcional para selects
   required   Boolean  @default(false)
-  createdAt DateTime        @default(now()) @map("created_at")
-  updatedAt DateTime        @updatedAt @map("updated_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("category_spec_definitions")
 }
 
 model Product {
-  id        String  @id  @db.Uuid  
-  companyId String  @map("company_id") @db.Uuid
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name      String  @map("name")
-  sku       String  @map("sku")
-  categoryId  Int     @map("category_id")
-  category    Category @relation(fields: [categoryId], references: [id])
-  description String? @db.Text  @map("description")
-  price       Float   @map("price")
-  unit        Int  @map("unit")
-  stockCurrent Int  @map("stock_current")
-  stockMinimum Int  @map("stock_minimum")
-  isActive    Boolean @default(true) @map("is_active")
-  specs       Json?   @map("specs") @default("{}") // Para almacenar especificaciones adicionales en formato JSON
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String    @id @db.Uuid
+  companyId    String    @map("company_id") @db.Uuid
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name         String
+  sku          String
+  categoryId   Int       @map("category_id")
+  category     Category  @relation(fields: [categoryId], references: [id])
+  description  String?   @db.Text
+  price        Float
+  stockCurrent Int       @map("stock_current")
+  stockMinimum Int       @map("stock_minimum")
+  isActive     Boolean   @default(true) @map("is_active")
+  specs        Json?     @default("{}") // especificaciones adicionales (JSON)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  movements    StockMovement[]
 
   @@map("products")
 }
