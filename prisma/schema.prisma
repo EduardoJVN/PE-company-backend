@@ -241,3 +241,67 @@ model CompanyMember {
 
   @@map("company_members")
 }
+
+// prodcuts & inventory
+model Category {
+  id        Int             @id @default(autoincrement())
+  name      String
+  parentId  Int?            @map("parent_id")
+  parent    Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  slug      String          @unique
+  children  Category[]      @relation("CategoryHierarchy")
+  products   Product[]
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+  @@map("categories")
+}
+
+model CategorySpecDefinition {
+  id         Int      @id @default(autoincrement())
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+  name       String   // Ej: "ram"
+  label      String   // Ej: "Memoria RAM"
+  options    Json     // Ej: ["4GB", "8GB", "16GB"] - Opcional para selects
+  required   Boolean  @default(false)
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+}
+
+model Product {
+  id        String  @id  @db.Uuid  
+  companyId String  @map("company_id") @db.Uuid
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String  @map("name")
+  sku       String  @map("sku")
+  categoryId  Int     @map("category_id")
+  category    Category @relation(fields: [categoryId], references: [id])
+  description String? @db.Text  @map("description")
+  price       Float   @map("price")
+  unit        Int  @map("unit")
+  stockCurrent Int  @map("stock_current")
+  stockMinimum Int  @map("stock_minimum")
+  isActive    Boolean @default(true) @map("is_active")
+  specs       Json?   @map("specs") @default("{}") // Para almacenar especificaciones adicionales en formato JSON
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("products")
+}
+
+model StockMovement {
+  id        String  @id  @db.Uuid  
+  productId String  @map("product_id") @db.Uuid
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      String  @map("type") // IN, OUT, ADJUSTMENT
+  quantity  Int     @map("quantity")
+  note      String? @db.Text @map("note")
+  referenceId String? @map("reference_id") @db.Uuid
+  createdBy String? @map("created_by") @db.Uuid
+  creator    User?   @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("stock_movements")
+}
+// prodcuts & inventory
+
