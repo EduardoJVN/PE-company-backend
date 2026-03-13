@@ -346,12 +346,28 @@ describe('PrismaCompanyRepository.update', () => {
 describe('PrismaCompanyRepository.findMemberByUserAndCompany', () => {
   let repo: PrismaCompanyRepository;
 
-  const memberRaw: CompanyMemberResult = {
+  // Forma raw que devuelve Prisma (incluye la relación company)
+  const memberPrismaRaw = {
     id: 'member-uuid',
     companyId: 'company-uuid',
     userId: 'owner-uuid',
     roleId: CompanyMemberRoleId.OWNER,
     statusId: CompanyMemberStatusId.ACTIVE,
+    invitedAt: null,
+    invitedBy: null,
+    acceptedAt: null,
+    acceptedBy: null,
+    company: { statusId: CompanyStatusId.ACTIVE },
+  };
+
+  // Resultado mapeado esperado
+  const memberExpected: CompanyMemberResult = {
+    id: 'member-uuid',
+    companyId: 'company-uuid',
+    userId: 'owner-uuid',
+    roleId: CompanyMemberRoleId.OWNER,
+    statusId: CompanyMemberStatusId.ACTIVE,
+    companyStatusId: CompanyStatusId.ACTIVE,
     invitedAt: null,
     invitedBy: null,
     acceptedAt: null,
@@ -363,7 +379,7 @@ describe('PrismaCompanyRepository.findMemberByUserAndCompany', () => {
   });
 
   it('calls companyMember.findFirst once', async () => {
-    const { mockDb, mockMemberFindFirst } = makeMockDb(dbResult, [], null, null, memberRaw);
+    const { mockDb, mockMemberFindFirst } = makeMockDb(dbResult, [], null, null, memberPrismaRaw);
     repo = new PrismaCompanyRepository(mockDb);
 
     await repo.findMemberByUserAndCompany('company-uuid', 'owner-uuid');
@@ -372,7 +388,7 @@ describe('PrismaCompanyRepository.findMemberByUserAndCompany', () => {
   });
 
   it('filters by companyId, userId and ACTIVE status', async () => {
-    const { mockDb, mockMemberFindFirst } = makeMockDb(dbResult, [], null, null, memberRaw);
+    const { mockDb, mockMemberFindFirst } = makeMockDb(dbResult, [], null, null, memberPrismaRaw);
     repo = new PrismaCompanyRepository(mockDb);
 
     await repo.findMemberByUserAndCompany('company-uuid', 'owner-uuid');
@@ -383,13 +399,13 @@ describe('PrismaCompanyRepository.findMemberByUserAndCompany', () => {
     expect(where.statusId).toBe(CompanyMemberStatusId.ACTIVE);
   });
 
-  it('returns the member result', async () => {
-    const { mockDb } = makeMockDb(dbResult, [], null, null, memberRaw);
+  it('maps Prisma result including companyStatusId', async () => {
+    const { mockDb } = makeMockDb(dbResult, [], null, null, memberPrismaRaw);
     repo = new PrismaCompanyRepository(mockDb);
 
     const result = await repo.findMemberByUserAndCompany('company-uuid', 'owner-uuid');
 
-    expect(result).toEqual(memberRaw);
+    expect(result).toEqual(memberExpected);
   });
 
   it('returns null when member is not found', async () => {

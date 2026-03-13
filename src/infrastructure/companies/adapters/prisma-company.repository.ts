@@ -76,6 +76,7 @@ export class PrismaCompanyRepository implements ICompanyRepository {
   async findByMemberId(userId: string): Promise<CompanyResult[]> {
     return this.db.company.findMany({
       where: {
+        isActive: true,
         members: {
           some: {
             userId,
@@ -91,6 +92,7 @@ export class PrismaCompanyRepository implements ICompanyRepository {
     const company = await this.db.company.findFirst({
       where: {
         id: companyId,
+        isActive: true,
         members: {
           some: {
             userId,
@@ -188,9 +190,22 @@ export class PrismaCompanyRepository implements ICompanyRepository {
         invitedBy: true,
         acceptedAt: true,
         acceptedBy: true,
+        company: { select: { statusId: true } },
       },
     });
-    return result as CompanyMemberResult | null;
+    if (!result) return null;
+    return {
+      id: result.id,
+      companyId: result.companyId,
+      userId: result.userId,
+      roleId: result.roleId,
+      statusId: result.statusId,
+      companyStatusId: result.company.statusId,
+      invitedAt: result.invitedAt,
+      invitedBy: result.invitedBy,
+      acceptedAt: result.acceptedAt,
+      acceptedBy: result.acceptedBy,
+    } as CompanyMemberResult;
   }
 
   async findMemberByUserAndCompanyAnyStatus(

@@ -5,6 +5,7 @@ import {
   ListProductsSchema,
   extractSpecsFilter,
 } from '@infra/products/entry-points/schemas/list-products.schema.js';
+import { GetProductParamsSchema } from '@infra/products/entry-points/schemas/get-product-params.schema.js';
 import type {
   CompanyContextRequest,
   HttpResponse,
@@ -12,13 +13,32 @@ import type {
 } from '@infra/entry-points/base.controller.js';
 import type { CreateProductUseCase } from '@application/products/create-product.use-case.js';
 import type { ListProductsUseCase } from '@application/products/list-products.use-case.js';
+import type { GetProductUseCase } from '@application/products/get-product.use-case.js';
 
 export class ProductController extends BaseController {
   constructor(
     private readonly createProductUseCase: CreateProductUseCase,
     private readonly listProductsUseCase: ListProductsUseCase,
+    private readonly getProductUseCase: GetProductUseCase,
   ) {
     super();
+  }
+
+  async getById(req: CompanyContextRequest): Promise<HttpResponse> {
+    return this.handleRequest(
+      () => {
+        const parsed = GetProductParamsSchema.safeParse(req.params);
+        if (!parsed.success) {
+          throw new ValidationError(parsed.error.issues.map((i) => i.message).join(', '));
+        }
+        return this.getProductUseCase.execute({
+          companyId: req.companyId,
+          id: parsed.data.id,
+        });
+      },
+      (result) => ({ status: 200, body: result }),
+      (error: ErrorResponse) => ({ status: error.status, body: { error: error.message } }),
+    );
   }
 
   async create(req: CompanyContextRequest): Promise<HttpResponse> {
@@ -47,12 +67,14 @@ export class ProductController extends BaseController {
         if (!parsed.success) {
           throw new ValidationError(parsed.error.issues.map((i) => i.message).join(', '));
         }
-        const { page, limit, name, categoryId, minStock, maxStock, ...rest } = parsed.data;
+        const { page, limit, isActive, name, categoryId, minStock, maxStock, ...rest } =
+          parsed.data;
         return this.listProductsUseCase.execute({
           companyId: req.companyId,
           page,
           limit,
           filter: {
+            isActive,
             name,
             categoryId,
             minStock,

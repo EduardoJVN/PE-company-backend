@@ -30,6 +30,7 @@ export interface StockMovementResult {
 }
 
 export interface ListProductsFilter {
+  isActive?: boolean;
   name?: string;
   categoryId?: number;
   minStock?: number;
@@ -47,4 +48,5 @@ export interface IProductRepository {
     limit: number | undefined,
     offset: number | undefined,
   ): Promise<{ data: ProductResult[]; total: number }>;
+  findById(companyId: string, id: string): Promise<ProductResult | null>;
 }

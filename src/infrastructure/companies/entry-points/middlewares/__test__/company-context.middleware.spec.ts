@@ -6,7 +6,11 @@ import {
 } from '@infra/companies/entry-points/middlewares/company-context.middleware.js';
 import type { ICompanyRepository } from '@domain/companies/ports/company-repository.port.js';
 import type { ICompanyMembershipCache } from '@domain/companies/ports/company-membership-cache.port.js';
-import { CompanyMemberRoleId, CompanyMemberStatusId } from '@domain/catalog-ids.js';
+import {
+  CompanyMemberRoleId,
+  CompanyMemberStatusId,
+  CompanyStatusId,
+} from '@domain/catalog-ids.js';
 
 function makeReq(headers: Record<string, string> = {}): Request {
   return { headers } as unknown as Request;
@@ -26,6 +30,7 @@ const mockMember = {
   userId: 'user-uuid',
   roleId: CompanyMemberRoleId.OWNER,
   statusId: CompanyMemberStatusId.ACTIVE,
+  companyStatusId: CompanyStatusId.ACTIVE,
   invitedAt: null,
   invitedBy: null,
   acceptedAt: null,
@@ -114,6 +119,45 @@ describe('createCompanyContextMiddleware', () => {
       roleId: CompanyMemberRoleId.ADMIN,
     });
     expect(next).toHaveBeenCalled();
+  });
+
+  it('returns 403 when company is INACTIVE and member is not OWNER', async () => {
+    const nonOwnerRoles = [
+      CompanyMemberRoleId.ADMIN,
+      CompanyMemberRoleId.EDITOR,
+      CompanyMemberRoleId.VIEWER,
+    ];
+
+    for (const roleId of nonOwnerRoles) {
+      const inactiveMember = { ...mockMember, roleId, companyStatusId: CompanyStatusId.INACTIVE };
+      vi.mocked(companyRepo.findMemberByUserAndCompany).mockResolvedValue(inactiveMember);
+      const middleware = createCompanyContextMiddleware(companyRepo, membershipCache);
+      const req = makeReq({ 'x-company-id': 'company-uuid' });
+      const res = makeRes({ userId: 'user-uuid' });
+
+      await middleware(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+      vi.clearAllMocks();
+    }
+  });
+
+  it('allows OWNER access when company is INACTIVE', async () => {
+    const inactiveOwner = {
+      ...mockMember,
+      roleId: CompanyMemberRoleId.OWNER,
+      companyStatusId: CompanyStatusId.INACTIVE,
+    };
+    vi.mocked(companyRepo.findMemberByUserAndCompany).mockResolvedValue(inactiveOwner);
+    const middleware = createCompanyContextMiddleware(companyRepo, membershipCache);
+    const req = makeReq({ 'x-company-id': 'company-uuid' });
+    const res = makeRes({ userId: 'user-uuid' });
+
+    await middleware(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   it('stores the member roleId in the company context', async () => {

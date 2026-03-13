@@ -1,6 +1,10 @@
 import type { Company } from '@domain/companies/entities/company.entity.js';
 import type { CompanyMember } from '@domain/companies/entities/company-member.entity.js';
-import type { CompanyMemberRoleId, CompanyMemberStatus } from '@domain/catalog-ids.js';
+import type {
+  CompanyMemberRoleId,
+  CompanyMemberStatus,
+  CompanyStatusId,
+} from '@domain/catalog-ids.js';
 
 export interface CompanyResult {
   id: string;
@@ -33,6 +37,7 @@ export interface CompanyMemberResult {
   userId: string;
   roleId: CompanyMemberRoleId;
   statusId: CompanyMemberStatus;
+  companyStatusId: CompanyStatusId;
   invitedAt: Date | null;
   invitedBy: string | null;
   acceptedAt: Date | null;

@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ProductController } from '@infra/products/entry-points/product.controller.js';
 import type { CreateProductUseCase } from '@application/products/create-product.use-case.js';
+import type { GetProductUseCase } from '@application/products/get-product.use-case.js';
 import type { ProductResult } from '@domain/products/ports/product-repository.port.js';
 import type { CompanyContextRequest } from '@infra/entry-points/base.controller.js';
 import { CompanyMemberRoleId } from '@domain/catalog-ids.js';
 import { DuplicateSkuError } from '@domain/products/errors/duplicate-sku.error.js';
 import { InvalidProductNameError } from '@domain/products/errors/invalid-product-name.error.js';
+import { ProductNotFoundError } from '@domain/products/errors/product-not-found.error.js';
 
 const mockProductResult: ProductResult = {
   id: 'prod-uuid',
@@ -32,16 +34,68 @@ const validBody = {
   stockMinimum: 2,
 };
 
-function makeRequest(body: unknown): CompanyContextRequest {
+function makeRequest(body: unknown, params: Record<string, string> = {}): CompanyContextRequest {
   return {
     body,
-    params: {},
+    params,
     query: {},
     userId: 'user-uuid',
     companyId: 'company-uuid',
     companyRoleId: CompanyMemberRoleId.ADMIN,
   };
 }
+
+const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
+
+describe('ProductController.getById', () => {
+  let mockGetUseCase: GetProductUseCase;
+  let controller: ProductController;
+
+  beforeEach(() => {
+    mockGetUseCase = {
+      execute: vi.fn().mockResolvedValue(mockProductResult),
+    } as unknown as GetProductUseCase;
+    controller = new ProductController(
+      { execute: vi.fn() } as unknown as CreateProductUseCase,
+      {
+        execute: vi.fn(),
+      } as unknown as import('@application/products/list-products.use-case.js').ListProductsUseCase,
+      mockGetUseCase,
+    );
+  });
+
+  it('returns 200 with the product', async () => {
+    const result = await controller.getById(makeRequest({}, { id: VALID_UUID }));
+    expect(result.status).toBe(200);
+    expect(result.body).toEqual(mockProductResult);
+  });
+
+  it('calls use case with companyId and id from request', async () => {
+    await controller.getById(makeRequest({}, { id: VALID_UUID }));
+    expect(mockGetUseCase.execute).toHaveBeenCalledWith({
+      companyId: 'company-uuid',
+      id: VALID_UUID,
+    });
+  });
+
+  it('returns 400 for invalid UUID param', async () => {
+    const result = await controller.getById(makeRequest({}, { id: 'not-a-uuid' }));
+    expect(result.status).toBe(400);
+    expect(result.body).toMatchObject({ error: expect.any(String) });
+  });
+
+  it('returns 404 when product is not found', async () => {
+    vi.mocked(mockGetUseCase.execute).mockRejectedValue(new ProductNotFoundError(VALID_UUID));
+    const result = await controller.getById(makeRequest({}, { id: VALID_UUID }));
+    expect(result.status).toBe(404);
+  });
+
+  it('returns 500 on unexpected error', async () => {
+    vi.mocked(mockGetUseCase.execute).mockRejectedValue(new Error('DB is on fire'));
+    const result = await controller.getById(makeRequest({}, { id: VALID_UUID }));
+    expect(result.status).toBe(500);
+  });
+});
 
 describe('ProductController.create', () => {
   let mockUseCase: CreateProductUseCase;
@@ -51,7 +105,13 @@ describe('ProductController.create', () => {
     mockUseCase = {
       execute: vi.fn().mockResolvedValue(mockProductResult),
     } as unknown as CreateProductUseCase;
-    controller = new ProductController(mockUseCase);
+    controller = new ProductController(
+      mockUseCase,
+      {
+        execute: vi.fn(),
+      } as unknown as import('@application/products/list-products.use-case.js').ListProductsUseCase,
+      { execute: vi.fn() } as unknown as GetProductUseCase,
+    );
   });
 
   it('returns 201 with the created product', async () => {

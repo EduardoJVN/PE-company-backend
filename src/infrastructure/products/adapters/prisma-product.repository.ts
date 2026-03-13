@@ -60,6 +60,14 @@ export class PrismaProductRepository implements IProductRepository {
     return count > 0;
   }
 
+  async findById(companyId: string, id: string): Promise<ProductResult | null> {
+    const row = await this.db.product.findFirst({
+      where: { id, companyId },
+      select: productSelect,
+    });
+    return row ? this.toResult(row) : null;
+  }
+
   async findAll(
     companyId: string,
     filter: ListProductsFilter,
@@ -83,8 +91,11 @@ export class PrismaProductRepository implements IProductRepository {
   }
 
   private buildWhere(companyId: string, filter: ListProductsFilter) {
-    const where: Record<string, unknown> = { companyId, isActive: true };
+    const where: Record<string, unknown> = { companyId };
 
+    if (filter.isActive !== undefined) {
+      where['isActive'] = filter.isActive;
+    }
     if (filter.name) {
       where['name'] = { contains: filter.name, mode: 'insensitive' };
     }

@@ -32,6 +32,14 @@ class MockProductRepository implements IProductRepository {
     return toResult(product);
   }
 
+  async findAll(): Promise<{ data: ProductResult[]; total: number }> {
+    return { data: [], total: 0 };
+  }
+
+  async findById(_companyId: string, _id: string): Promise<ProductResult | null> {
+    return null;
+  }
+
   seedSku(sku: string) {
     this.skus.add(sku);
   }

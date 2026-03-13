@@ -1,7 +1,7 @@
 import type { RequestHandler, Request, Response, NextFunction } from 'express';
 import type { ICompanyRepository } from '@domain/companies/ports/company-repository.port.js';
 import type { ICompanyMembershipCache } from '@domain/companies/ports/company-membership-cache.port.js';
-import type { CompanyMemberRoleId } from '@domain/catalog-ids.js';
+import { CompanyMemberRoleId, CompanyStatusId } from '@domain/catalog-ids.js';
 
 const MEMBERSHIP_TTL_MS = 5 * 60 * 1000; // 5 min
 
@@ -30,6 +30,14 @@ export function createCompanyContextMiddleware(
     const member = await companyRepo.findMemberByUserAndCompany(companyId, userId);
 
     if (!member) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    if (
+      member.companyStatusId === CompanyStatusId.INACTIVE &&
+      member.roleId !== CompanyMemberRoleId.OWNER
+    ) {
       res.status(403).json({ error: 'Forbidden' });
       return;
     }

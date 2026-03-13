@@ -63,10 +63,9 @@ async function main() {
     await tx.$executeRawUnsafe(`
       INSERT INTO "company_status" (id, name, created_at, updated_at) VALUES
       (1, 'ACTIVE', NOW(), NOW()),
-      (2, 'PENDING_VERIFIED', NOW(), NOW()),
-      (3, 'VERIFIED', NOW(), NOW()),
-      (4, 'SUSPENDED', NOW(), NOW()),
-      (5, 'INACTIVE', NOW(), NOW());
+      (2, 'VERIFIED', NOW(), NOW()),
+      (3, 'SUSPENDED', NOW(), NOW()),
+      (4, 'INACTIVE', NOW(), NOW());
     `);
 
     // 3. Insertar Estados de miembros de empresa

@@ -44,10 +44,9 @@ export type CompanyMemberRoleId = (typeof CompanyMemberRoleId)[keyof typeof Comp
 
 export const CompanyStatusId = {
   ACTIVE: 1,
-  PENDING_VERIFIED: 2,
-  VERIFIED: 3,
-  SUSPENDED: 4,
-  INACTIVE: 5,
+  VERIFIED: 2,
+  SUSPENDED: 3,
+  INACTIVE: 4,
 } as const;
 
 export type CompanyStatusId = (typeof CompanyStatusId)[keyof typeof CompanyStatusId];

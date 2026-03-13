@@ -40,6 +40,11 @@ export function createProductRoutes(
   router.use(jwtMiddleware);
   router.use(companyContextMiddleware);
 
+  router.get('/:id', requireCompanyAccess([OWNER, ADMIN, EDITOR, VIEWER]), async (req, res) => {
+    const result = await controller.getById(toCompanyContextRequest(req, res));
+    sendHttpResponse(res, result);
+  });
+
   router.get('/', requireCompanyAccess([OWNER, ADMIN, EDITOR, VIEWER]), async (req, res) => {
     const result = await controller.list(toCompanyContextRequest(req, res));
     sendHttpResponse(res, result);

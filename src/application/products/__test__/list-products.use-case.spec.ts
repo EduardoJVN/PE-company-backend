@@ -49,6 +49,10 @@ class MockProductRepository implements IProductRepository {
     return { data: slice, total: this.store.length };
   }
 
+  async findById(_companyId: string, _id: string): Promise<ProductResult | null> {
+    return null;
+  }
+
   seed(items: ProductResult[]) {
     this.store = items;
   }
@@ -95,7 +99,7 @@ describe('ListProductsUseCase', () => {
 
   it('passes filter and companyId to repository', async () => {
     const spy = vi.spyOn(repo, 'findAll');
-    const filter = { name: 'laptop', categoryId: 3 };
+    const filter = { name: 'laptop', categoryId: 3, isActive: true };
 
     await useCase.execute({ companyId: 'company-1', filter, page: 1, limit: 10 });
 
