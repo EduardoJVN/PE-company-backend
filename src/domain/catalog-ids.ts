@@ -70,14 +70,4 @@ export enum StockMovementType {
   OUT = 'OUT',
   ADJUSTMENT = 'ADJUSTMENT',
 }
-export const CategoryProductsId = {
-  PENDING: 1,
-  ACTIVE: 2,
-  SUSPENDED: 3,
-  INACTIVE: 4,
-  REJECTED: 5,
-  DELETED: 6,
-} as const;
-
-export type CategoryProductsId = (typeof CategoryProductsId)[keyof typeof CategoryProductsId];
 // products

@@ -6,6 +6,7 @@ import type { ILogger } from '@domain/ports/logger.port.js';
 import type { IErrorReporter } from '@domain/ports/error-reporter.port.js';
 import type { AppModule } from '@infra/modules/app.module.js';
 import { createCompanyRoutes } from '@infra/companies/entry-points/routes/companies.routes.js';
+import { createProductRoutes } from '@infra/products/entry-points/routes/products.routes.js';
 import { createJwtAuthMiddleware } from '@infra/auth/entry-points/middlewares/jwt-auth.middleware.js';
 import { createHttpTracingMiddleware } from '@infra/entry-points/middlewares/http-tracing.middleware.js';
 import { openApiSpec } from '@infra/entry-points/docs/openapi.js';
@@ -29,7 +30,7 @@ export function createServer(
       res.json(openApiSpec);
     });
   }
-  const { companies, auth } = appModule;
+  const { companies, auth, products } = appModule;
   const jwtMiddleware = createJwtAuthMiddleware(auth.tokenSigner, auth.tokenBlacklist);
 
   app.use('/health', (_req, res) => {
@@ -46,6 +47,16 @@ export function createServer(
     '/companies',
     createCompanyRoutes(
       companies.companyController,
+      jwtMiddleware,
+      companies.companyContextMiddleware,
+    ),
+  );
+
+  // --- Products ---
+  app.use(
+    '/products',
+    createProductRoutes(
+      products.productController,
       jwtMiddleware,
       companies.companyContextMiddleware,
     ),

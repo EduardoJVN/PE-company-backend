@@ -20,7 +20,7 @@ async function main() {
     // 1. Limpiar tablas (opcional, por si quieres re-ejecutarlo)
     // TRUNCATE elimina los datos y reinicia contadores de ID
     await tx.$executeRawUnsafe(
-      `TRUNCATE TABLE "user_roles", "user_status", "register_types", "company_member_roles" RESTART IDENTITY CASCADE;`,
+      `TRUNCATE TABLE "user_roles", "user_status", "register_types", "company_member_roles", categories, category_spec_definitions RESTART IDENTITY CASCADE;`,
     );
 
     // 2. Insertar Roles de Usuario con IDs fijos
@@ -93,6 +93,38 @@ async function main() {
     await tx.$executeRawUnsafe(`
       INSERT INTO "users" (id, email, password, status_id, role_id, register_type_id, is_active, created_at, updated_at) VALUES
       ('${userId}', 'user@email.com', '${password}', 2, 1, 1, true, NOW(), NOW());
+    `);
+
+    // inserta categories
+
+    // category lvl 1
+    await tx.$executeRawUnsafe(`
+      INSERT INTO "categories" (id, name, slug , parent_id , created_at, updated_at) VALUES
+      (1, 'Tecnología', '/tecnologia', NULL, NOW(), NOW()),
+      (2, 'Hogar y muebles', '/hogar', NULL, NOW(), NOW()),
+      (3, 'Comida', '/comida', NULL, NOW(), NOW());
+     
+    `);
+
+    // category lvl 2
+    await tx.$executeRawUnsafe(`
+      INSERT INTO "categories" (id, name, slug , parent_id , created_at, updated_at) VALUES
+       (4, 'Celulares y Teléfonos', '/celulares-telefonos', 1, NOW(), NOW()),
+       (5, 'Computación', '/computacion', 1, NOW(), NOW()),
+       (6, 'Cocina y bazar', '/cocina-bazar', 2, NOW(), NOW());
+    `);
+
+    // category lvl 3
+    await tx.$executeRawUnsafe(`
+      INSERT INTO "categories" (id, name, slug , parent_id , created_at, updated_at) VALUES
+       (7, 'Accesorios para Celulares', '/accesorios-celulares', 4, NOW(), NOW());
+    `);
+
+    // specs de categoria
+    await tx.$executeRawUnsafe(`
+      INSERT INTO "category_spec_definitions" (id, category_id, name, label , options ,created_at, updated_at) VALUES
+      (1, 4 ,'color', 'Color', '["Negro", "Azul", "Rojo"]', NOW(), NOW()),
+      (2, 4 ,'ram', 'Memoria ram', '["8GB", "16GB", "32GB"]', NOW(), NOW());
     `);
 
     console.log('✅ Catálogos insertados con IDs fijos.'); // eslint-disable-line

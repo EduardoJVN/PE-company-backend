@@ -248,6 +248,7 @@ model CompanyMember {
 model Category {
   id             Int                      @id @default(autoincrement())
   name           String
+  imageUrl       String?                  @map("image_url")
   parentId       Int?                     @map("parent_id")
   parent         Category?                @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   slug           String                   @unique
@@ -264,6 +265,7 @@ model CategorySpecDefinition {
   id         Int      @id @default(autoincrement())
   categoryId Int      @map("category_id")
   category   Category @relation(fields: [categoryId], references: [id])
+  imageUrl   String?                  @map("image_url")
   name       String   // Ej: "ram"
   label      String   // Ej: "Memoria RAM"
   options    Json     // Ej: ["4GB", "8GB", "16GB"] - Opcional para selects
@@ -292,8 +294,20 @@ model Product {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   movements    StockMovement[]
+  images       ProductImage[]
 
   @@map("products")
+}
+
+model ProductImage {
+  id        String   @id @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("product_images")
 }
 
 model StockMovement {
