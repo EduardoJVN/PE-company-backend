@@ -25,6 +25,18 @@ describe('toPaginatedResult', () => {
     const result = toPaginatedResult([], 0, { page: 1, limit: 20 });
     expect(result.totalPages).toBe(0);
   });
+
+  it('uses total as limit when limit is undefined', () => {
+    const result = toPaginatedResult(['a', 'b', 'c'], 3, { page: 1 });
+    expect(result.limit).toBe(3);
+    expect(result.totalPages).toBe(1);
+    expect(result.data).toHaveLength(3);
+  });
+
+  it('totalPages is 0 when total is 0 and limit is undefined', () => {
+    const result = toPaginatedResult([], 0, { page: 1 });
+    expect(result.totalPages).toBe(0);
+  });
 });
 
 describe('toOffset', () => {
@@ -38,5 +50,9 @@ describe('toOffset', () => {
 
   it('handles custom limit', () => {
     expect(toOffset({ page: 3, limit: 10 })).toBe(20);
+  });
+
+  it('returns undefined when limit is not set', () => {
+    expect(toOffset({ page: 1 })).toBeUndefined();
   });
 });

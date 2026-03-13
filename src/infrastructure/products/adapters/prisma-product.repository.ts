@@ -63,8 +63,8 @@ export class PrismaProductRepository implements IProductRepository {
   async findAll(
     companyId: string,
     filter: ListProductsFilter,
-    limit: number,
-    offset: number,
+    limit: number | undefined,
+    offset: number | undefined,
   ): Promise<{ data: ProductResult[]; total: number }> {
     const where = this.buildWhere(companyId, filter);
 

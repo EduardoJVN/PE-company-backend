@@ -7,5 +7,5 @@ export const PaginationSchema = z.object({
     .int()
     .min(1, { error: 'Limit must be >= 1' })
     .max(100, { error: 'Limit must be <= 100' })
-    .default(20),
+    .optional(),
 });

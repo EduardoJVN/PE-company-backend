@@ -44,7 +44,7 @@ export interface IProductRepository {
   findAll(
     companyId: string,
     filter: ListProductsFilter,
-    limit: number,
-    offset: number,
+    limit: number | undefined,
+    offset: number | undefined,
   ): Promise<{ data: ProductResult[]; total: number }>;
 }

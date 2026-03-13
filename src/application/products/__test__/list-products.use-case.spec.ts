@@ -40,10 +40,12 @@ class MockProductRepository implements IProductRepository {
   async findAll(
     _companyId: string,
     _filter: ListProductsFilter,
-    limit: number,
-    offset: number,
+    limit: number | undefined,
+    offset: number | undefined,
   ): Promise<{ data: ProductResult[]; total: number }> {
-    const slice = this.store.slice(offset, offset + limit);
+    const start = offset ?? 0;
+    const slice =
+      limit !== undefined ? this.store.slice(start, start + limit) : this.store.slice(start);
     return { data: slice, total: this.store.length };
   }
 
@@ -98,5 +100,28 @@ describe('ListProductsUseCase', () => {
     await useCase.execute({ companyId: 'company-1', filter, page: 1, limit: 10 });
 
     expect(spy).toHaveBeenCalledWith('company-1', filter, 10, 0);
+  });
+
+  it('returns all items when limit is not provided', async () => {
+    repo.seed(Array.from({ length: 45 }, (_, i) => makeProduct(`p${i}`)));
+
+    const result = await useCase.execute({
+      companyId: 'company-1',
+      filter: {},
+      page: 1,
+    });
+
+    expect(result.data).toHaveLength(45);
+    expect(result.total).toBe(45);
+    expect(result.totalPages).toBe(1);
+    expect(result.limit).toBe(45);
+  });
+
+  it('passes undefined limit and offset to repository when no pagination', async () => {
+    const spy = vi.spyOn(repo, 'findAll');
+
+    await useCase.execute({ companyId: 'company-1', filter: {}, page: 1 });
+
+    expect(spy).toHaveBeenCalledWith('company-1', {}, undefined, undefined);
   });
 });

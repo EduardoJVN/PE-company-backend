@@ -1,6 +1,6 @@
 export interface PaginationQuery {
   page: number;
-  limit: number;
+  limit?: number;
 }
 
 export interface PaginatedResult<T> {
@@ -16,15 +16,17 @@ export function toPaginatedResult<T>(
   total: number,
   query: PaginationQuery,
 ): PaginatedResult<T> {
+  const effectiveLimit = query.limit ?? total;
   return {
     data,
     total,
     page: query.page,
-    limit: query.limit,
-    totalPages: Math.ceil(total / query.limit),
+    limit: effectiveLimit,
+    totalPages: effectiveLimit > 0 ? Math.ceil(total / effectiveLimit) : 0,
   };
 }
 
-export function toOffset(query: PaginationQuery): number {
+export function toOffset(query: PaginationQuery): number | undefined {
+  if (!query.limit) return undefined;
   return (query.page - 1) * query.limit;
 }

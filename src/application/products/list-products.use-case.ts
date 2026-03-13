@@ -22,6 +22,6 @@ export class ListProductsUseCase {
       input.limit,
       offset,
     );
-    return toPaginatedResult(data, total, input);
+    return toPaginatedResult(data, total, { page: input.page, limit: input.limit });
   }
 }
