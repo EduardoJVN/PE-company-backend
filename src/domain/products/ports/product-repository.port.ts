@@ -49,4 +49,5 @@ export interface IProductRepository {
     offset: number | undefined,
   ): Promise<{ data: ProductResult[]; total: number }>;
   findById(companyId: string, id: string): Promise<ProductResult | null>;
+  update(product: Product): Promise<ProductResult>;
 }

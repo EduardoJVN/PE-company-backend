@@ -45,6 +45,9 @@ class MockProductRepository implements IProductRepository {
   ): Promise<{ data: ProductResult[]; total: number }> {
     return { data: [], total: 0 };
   }
+  async update(_p: Product): Promise<ProductResult> {
+    return makeProduct('x');
+  }
   async findById(companyId: string, id: string): Promise<ProductResult | null> {
     const product = this.store.get(id);
     if (!product || product.companyId !== companyId) return null;

@@ -2,7 +2,13 @@ import { z } from 'zod';
 import { PaginationSchema } from '@shared/schemas/pagination.schema.js';
 
 export const ListProductsSchema = PaginationSchema.extend({
-  isActive: z.coerce.boolean().default(true),
+  isActive: z
+    .preprocess(
+      (val) =>
+        val === 'true' || val === '1' ? true : val === 'false' || val === '0' ? false : val,
+      z.boolean(),
+    )
+    .default(true),
   name: z.string().optional(),
   categoryId: z.coerce.number().int().positive().optional(),
   minStock: z.coerce.number().int().min(0).optional(),

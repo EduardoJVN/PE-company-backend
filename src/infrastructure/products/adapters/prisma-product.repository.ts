@@ -60,6 +60,24 @@ export class PrismaProductRepository implements IProductRepository {
     return count > 0;
   }
 
+  async update(product: Product): Promise<ProductResult> {
+    const row = await this.db.product.update({
+      where: { id: product.id },
+      data: {
+        name: product.name,
+        sku: product.sku,
+        categoryId: product.categoryId,
+        description: product.description,
+        price: product.price,
+        stockMinimum: product.stockMinimum,
+        specs: product.specs,
+        updatedAt: product.updatedAt,
+      },
+      select: productSelect,
+    });
+    return this.toResult(row);
+  }
+
   async findById(companyId: string, id: string): Promise<ProductResult | null> {
     const row = await this.db.product.findFirst({
       where: { id, companyId },

@@ -50,6 +50,11 @@ export function createProductRoutes(
     sendHttpResponse(res, result);
   });
 
+  router.put('/:id', requireCompanyAccess([OWNER, ADMIN, EDITOR]), async (req, res) => {
+    const result = await controller.update(toCompanyContextRequest(req, res));
+    sendHttpResponse(res, result);
+  });
+
   router.post('/', requireCompanyAccess([OWNER, ADMIN, EDITOR]), async (req, res) => {
     const result = await controller.create(toCompanyContextRequest(req, res));
     sendHttpResponse(res, result);

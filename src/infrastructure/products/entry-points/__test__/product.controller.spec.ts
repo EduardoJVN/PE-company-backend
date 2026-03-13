@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ProductController } from '@infra/products/entry-points/product.controller.js';
 import type { CreateProductUseCase } from '@application/products/create-product.use-case.js';
 import type { GetProductUseCase } from '@application/products/get-product.use-case.js';
+import type { UpdateProductUseCase } from '@application/products/update-product.use-case.js';
+import type { ListProductsUseCase } from '@application/products/list-products.use-case.js';
 import type { ProductResult } from '@domain/products/ports/product-repository.port.js';
 import type { CompanyContextRequest } from '@infra/entry-points/base.controller.js';
 import { CompanyMemberRoleId } from '@domain/catalog-ids.js';
@@ -57,10 +59,9 @@ describe('ProductController.getById', () => {
     } as unknown as GetProductUseCase;
     controller = new ProductController(
       { execute: vi.fn() } as unknown as CreateProductUseCase,
-      {
-        execute: vi.fn(),
-      } as unknown as import('@application/products/list-products.use-case.js').ListProductsUseCase,
+      { execute: vi.fn() } as unknown as ListProductsUseCase,
       mockGetUseCase,
+      { execute: vi.fn() } as unknown as UpdateProductUseCase,
     );
   });
 
@@ -107,10 +108,9 @@ describe('ProductController.create', () => {
     } as unknown as CreateProductUseCase;
     controller = new ProductController(
       mockUseCase,
-      {
-        execute: vi.fn(),
-      } as unknown as import('@application/products/list-products.use-case.js').ListProductsUseCase,
+      { execute: vi.fn() } as unknown as ListProductsUseCase,
       { execute: vi.fn() } as unknown as GetProductUseCase,
+      { execute: vi.fn() } as unknown as UpdateProductUseCase,
     );
   });
 
@@ -148,6 +148,64 @@ describe('ProductController.create', () => {
   it('returns 500 on unexpected error', async () => {
     vi.mocked(mockUseCase.execute).mockRejectedValue(new Error('DB is on fire'));
     const result = await controller.create(makeRequest(validBody));
+    expect(result.status).toBe(500);
+  });
+});
+
+describe('ProductController.update', () => {
+  let mockUpdateUseCase: UpdateProductUseCase;
+  let controller: ProductController;
+
+  beforeEach(() => {
+    mockUpdateUseCase = {
+      execute: vi.fn().mockResolvedValue(mockProductResult),
+    } as unknown as UpdateProductUseCase;
+    controller = new ProductController(
+      { execute: vi.fn() } as unknown as CreateProductUseCase,
+      { execute: vi.fn() } as unknown as ListProductsUseCase,
+      { execute: vi.fn() } as unknown as GetProductUseCase,
+      mockUpdateUseCase,
+    );
+  });
+
+  it('returns 200 with the updated product', async () => {
+    const result = await controller.update(makeRequest({ name: 'New Name' }, { id: VALID_UUID }));
+    expect(result.status).toBe(200);
+    expect(result.body).toEqual(mockProductResult);
+  });
+
+  it('calls use case with companyId and id from request', async () => {
+    await controller.update(makeRequest({ price: 999 }, { id: VALID_UUID }));
+    expect(mockUpdateUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ companyId: 'company-uuid', id: VALID_UUID, price: 999 }),
+    );
+  });
+
+  it('returns 400 for invalid UUID param', async () => {
+    const result = await controller.update(makeRequest({ name: 'X' }, { id: 'not-a-uuid' }));
+    expect(result.status).toBe(400);
+  });
+
+  it('returns 400 when body is empty', async () => {
+    const result = await controller.update(makeRequest({}, { id: VALID_UUID }));
+    expect(result.status).toBe(400);
+  });
+
+  it('returns 404 when product is not found', async () => {
+    vi.mocked(mockUpdateUseCase.execute).mockRejectedValue(new ProductNotFoundError(VALID_UUID));
+    const result = await controller.update(makeRequest({ name: 'X' }, { id: VALID_UUID }));
+    expect(result.status).toBe(404);
+  });
+
+  it('returns 400 when DuplicateSkuError is thrown', async () => {
+    vi.mocked(mockUpdateUseCase.execute).mockRejectedValue(new DuplicateSkuError('SKU-X'));
+    const result = await controller.update(makeRequest({ sku: 'SKU-X' }, { id: VALID_UUID }));
+    expect(result.status).toBe(400);
+  });
+
+  it('returns 500 on unexpected error', async () => {
+    vi.mocked(mockUpdateUseCase.execute).mockRejectedValue(new Error('DB is on fire'));
+    const result = await controller.update(makeRequest({ name: 'X' }, { id: VALID_UUID }));
     expect(result.status).toBe(500);
   });
 });

@@ -178,6 +178,67 @@ describe('Product.create', () => {
   });
 });
 
+describe('Product.update', () => {
+  const base = Product.create(
+    BASE.id,
+    BASE.companyId,
+    BASE.name,
+    BASE.sku,
+    BASE.categoryId,
+    BASE.price,
+    BASE.stockCurrent,
+    BASE.stockMinimum,
+  );
+
+  it('returns a new instance with updated fields', () => {
+    const updated = base.update({ name: 'Laptop Pro', price: 1200 });
+    expect(updated.name).toBe('Laptop Pro');
+    expect(updated.price).toBe(1200);
+    expect(updated.sku).toBe(BASE.sku);
+  });
+
+  it('preserves unchanged fields', () => {
+    const updated = base.update({ name: 'New Name' });
+    expect(updated.id).toBe(base.id);
+    expect(updated.companyId).toBe(base.companyId);
+    expect(updated.stockCurrent).toBe(base.stockCurrent);
+    expect(updated.isActive).toBe(base.isActive);
+    expect(updated.createdAt).toBe(base.createdAt);
+  });
+
+  it('updates updatedAt', () => {
+    const before = base.updatedAt;
+    const updated = base.update({ name: 'New' });
+    expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+  });
+
+  it('allows setting description to null', () => {
+    const updated = base.update({ description: null });
+    expect(updated.description).toBeNull();
+  });
+
+  it('throws InvalidProductNameError for empty name', () => {
+    expect(() => base.update({ name: '  ' })).toThrow(InvalidProductNameError);
+  });
+
+  it('throws InvalidProductSkuError for empty sku', () => {
+    expect(() => base.update({ sku: '' })).toThrow(InvalidProductSkuError);
+  });
+
+  it('throws InvalidProductPriceError for negative price', () => {
+    expect(() => base.update({ price: -1 })).toThrow(InvalidProductPriceError);
+  });
+
+  it('throws InvalidStockMinimumError for negative stockMinimum', () => {
+    expect(() => base.update({ stockMinimum: -1 })).toThrow(InvalidStockMinimumError);
+  });
+
+  it('throws StockCurrentBelowMinimumError when new stockMinimum exceeds stockCurrent', () => {
+    // BASE.stockCurrent = 10, so stockMinimum > 10 should fail
+    expect(() => base.update({ stockMinimum: 11 })).toThrow(StockCurrentBelowMinimumError);
+  });
+});
+
 describe('Product.reconstitute', () => {
   it('reconstitutes without validation', () => {
     const now = new Date();

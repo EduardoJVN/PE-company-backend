@@ -58,6 +58,45 @@ export class Product {
     );
   }
 
+  update(updates: {
+    name?: string;
+    sku?: string;
+    categoryId?: number;
+    description?: string | null;
+    price?: number;
+    stockMinimum?: number;
+    specs?: Record<string, unknown>;
+  }): Product {
+    const newName = updates.name ?? this.name;
+    const newSku = updates.sku ?? this.sku;
+    const newPrice = updates.price ?? this.price;
+    const newStockMinimum = updates.stockMinimum ?? this.stockMinimum;
+
+    if (updates.name !== undefined && newName.trim() === '') throw new InvalidProductNameError();
+    if (updates.sku !== undefined && newSku.trim() === '') throw new InvalidProductSkuError();
+    if (updates.price !== undefined && newPrice < 0) throw new InvalidProductPriceError(newPrice);
+    if (updates.stockMinimum !== undefined && newStockMinimum < 0)
+      throw new InvalidStockMinimumError(newStockMinimum);
+    if (this.stockCurrent < newStockMinimum)
+      throw new StockCurrentBelowMinimumError(this.stockCurrent, newStockMinimum);
+
+    return new Product(
+      this.id,
+      this.companyId,
+      newName.trim(),
+      newSku.trim(),
+      updates.categoryId ?? this.categoryId,
+      updates.description !== undefined ? updates.description : this.description,
+      newPrice,
+      this.stockCurrent,
+      newStockMinimum,
+      this.isActive,
+      updates.specs ?? this.specs,
+      this.createdAt,
+      new Date(),
+    );
+  }
+
   static reconstitute(
     id: string,
     companyId: string,
