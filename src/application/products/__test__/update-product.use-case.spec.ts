@@ -65,6 +65,7 @@ class MockProductRepository implements IProductRepository {
     this.store.set(product.id, result);
     return result;
   }
+  async deactivate(_p: Product): Promise<void> {}
 
   seed(product: ProductResult) {
     this.store.set(product.id, product);

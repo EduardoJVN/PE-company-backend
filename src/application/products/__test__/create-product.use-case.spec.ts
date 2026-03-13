@@ -42,6 +42,7 @@ class MockProductRepository implements IProductRepository {
   async update(_p: Product): Promise<ProductResult> {
     return makeProduct('x');
   }
+  async deactivate(_p: Product): Promise<void> {}
 
   seedSku(sku: string) {
     this.skus.add(sku);

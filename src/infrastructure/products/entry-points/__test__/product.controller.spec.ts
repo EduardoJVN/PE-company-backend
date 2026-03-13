@@ -3,6 +3,7 @@ import { ProductController } from '@infra/products/entry-points/product.controll
 import type { CreateProductUseCase } from '@application/products/create-product.use-case.js';
 import type { GetProductUseCase } from '@application/products/get-product.use-case.js';
 import type { UpdateProductUseCase } from '@application/products/update-product.use-case.js';
+import type { DeleteProductUseCase } from '@application/products/delete-product.use-case.js';
 import type { ListProductsUseCase } from '@application/products/list-products.use-case.js';
 import type { ProductResult } from '@domain/products/ports/product-repository.port.js';
 import type { CompanyContextRequest } from '@infra/entry-points/base.controller.js';
@@ -62,6 +63,7 @@ describe('ProductController.getById', () => {
       { execute: vi.fn() } as unknown as ListProductsUseCase,
       mockGetUseCase,
       { execute: vi.fn() } as unknown as UpdateProductUseCase,
+      { execute: vi.fn() } as unknown as DeleteProductUseCase,
     );
   });
 
@@ -111,6 +113,7 @@ describe('ProductController.create', () => {
       { execute: vi.fn() } as unknown as ListProductsUseCase,
       { execute: vi.fn() } as unknown as GetProductUseCase,
       { execute: vi.fn() } as unknown as UpdateProductUseCase,
+      { execute: vi.fn() } as unknown as DeleteProductUseCase,
     );
   });
 
@@ -165,6 +168,7 @@ describe('ProductController.update', () => {
       { execute: vi.fn() } as unknown as ListProductsUseCase,
       { execute: vi.fn() } as unknown as GetProductUseCase,
       mockUpdateUseCase,
+      { execute: vi.fn() } as unknown as DeleteProductUseCase,
     );
   });
 
@@ -206,6 +210,55 @@ describe('ProductController.update', () => {
   it('returns 500 on unexpected error', async () => {
     vi.mocked(mockUpdateUseCase.execute).mockRejectedValue(new Error('DB is on fire'));
     const result = await controller.update(makeRequest({ name: 'X' }, { id: VALID_UUID }));
+    expect(result.status).toBe(500);
+  });
+});
+
+describe('ProductController.delete', () => {
+  let mockDeleteUseCase: DeleteProductUseCase;
+  let controller: ProductController;
+
+  beforeEach(() => {
+    mockDeleteUseCase = {
+      execute: vi.fn().mockResolvedValue(undefined),
+    } as unknown as DeleteProductUseCase;
+    controller = new ProductController(
+      { execute: vi.fn() } as unknown as CreateProductUseCase,
+      { execute: vi.fn() } as unknown as ListProductsUseCase,
+      { execute: vi.fn() } as unknown as GetProductUseCase,
+      { execute: vi.fn() } as unknown as UpdateProductUseCase,
+      mockDeleteUseCase,
+    );
+  });
+
+  it('returns 204 on successful delete', async () => {
+    const result = await controller.delete(makeRequest({}, { id: VALID_UUID }));
+    expect(result.status).toBe(204);
+    expect(result.body).toBeNull();
+  });
+
+  it('calls use case with companyId and id', async () => {
+    await controller.delete(makeRequest({}, { id: VALID_UUID }));
+    expect(mockDeleteUseCase.execute).toHaveBeenCalledWith({
+      companyId: 'company-uuid',
+      id: VALID_UUID,
+    });
+  });
+
+  it('returns 400 for invalid UUID param', async () => {
+    const result = await controller.delete(makeRequest({}, { id: 'not-a-uuid' }));
+    expect(result.status).toBe(400);
+  });
+
+  it('returns 404 when product is not found', async () => {
+    vi.mocked(mockDeleteUseCase.execute).mockRejectedValue(new ProductNotFoundError(VALID_UUID));
+    const result = await controller.delete(makeRequest({}, { id: VALID_UUID }));
+    expect(result.status).toBe(404);
+  });
+
+  it('returns 500 on unexpected error', async () => {
+    vi.mocked(mockDeleteUseCase.execute).mockRejectedValue(new Error('DB is on fire'));
+    const result = await controller.delete(makeRequest({}, { id: VALID_UUID }));
     expect(result.status).toBe(500);
   });
 });

@@ -58,6 +58,24 @@ export class Product {
     );
   }
 
+  deactivate(): Product {
+    return new Product(
+      this.id,
+      this.companyId,
+      this.name,
+      this.sku,
+      this.categoryId,
+      this.description,
+      this.price,
+      this.stockCurrent,
+      this.stockMinimum,
+      false,
+      this.specs,
+      this.createdAt,
+      new Date(),
+    );
+  }
+
   update(updates: {
     name?: string;
     sku?: string;

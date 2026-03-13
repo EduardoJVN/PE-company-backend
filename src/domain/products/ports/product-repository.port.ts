@@ -50,4 +50,5 @@ export interface IProductRepository {
   ): Promise<{ data: ProductResult[]; total: number }>;
   findById(companyId: string, id: string): Promise<ProductResult | null>;
   update(product: Product): Promise<ProductResult>;
+  deactivate(product: Product): Promise<void>;
 }

@@ -16,6 +16,7 @@ import type { CreateProductUseCase } from '@application/products/create-product.
 import type { ListProductsUseCase } from '@application/products/list-products.use-case.js';
 import type { GetProductUseCase } from '@application/products/get-product.use-case.js';
 import type { UpdateProductUseCase } from '@application/products/update-product.use-case.js';
+import type { DeleteProductUseCase } from '@application/products/delete-product.use-case.js';
 
 export class ProductController extends BaseController {
   constructor(
@@ -23,6 +24,7 @@ export class ProductController extends BaseController {
     private readonly listProductsUseCase: ListProductsUseCase,
     private readonly getProductUseCase: GetProductUseCase,
     private readonly updateProductUseCase: UpdateProductUseCase,
+    private readonly deleteProductUseCase: DeleteProductUseCase,
   ) {
     super();
   }
@@ -40,6 +42,23 @@ export class ProductController extends BaseController {
         });
       },
       (result) => ({ status: 200, body: result }),
+      (error: ErrorResponse) => ({ status: error.status, body: { error: error.message } }),
+    );
+  }
+
+  async delete(req: CompanyContextRequest): Promise<HttpResponse> {
+    return this.handleRequest(
+      () => {
+        const parsed = GetProductParamsSchema.safeParse(req.params);
+        if (!parsed.success) {
+          throw new ValidationError(parsed.error.issues.map((i) => i.message).join(', '));
+        }
+        return this.deleteProductUseCase.execute({
+          companyId: req.companyId,
+          id: parsed.data.id,
+        });
+      },
+      () => ({ status: 204, body: null }),
       (error: ErrorResponse) => ({ status: error.status, body: { error: error.message } }),
     );
   }

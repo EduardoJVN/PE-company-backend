@@ -78,6 +78,13 @@ export class PrismaProductRepository implements IProductRepository {
     return this.toResult(row);
   }
 
+  async deactivate(product: Product): Promise<void> {
+    await this.db.product.update({
+      where: { id: product.id },
+      data: { isActive: false, updatedAt: product.updatedAt },
+    });
+  }
+
   async findById(companyId: string, id: string): Promise<ProductResult | null> {
     const row = await this.db.product.findFirst({
       where: { id, companyId },
