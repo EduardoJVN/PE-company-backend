@@ -3,6 +3,7 @@ import type { Product } from '@domain/products/entities/product.entity.js';
 import type { StockMovement } from '@domain/products/entities/stock-movement.entity.js';
 import type {
   IProductRepository,
+  ListProductsFilter,
   ProductResult,
 } from '@domain/products/ports/product-repository.port.js';
 
@@ -57,6 +58,53 @@ export class PrismaProductRepository implements IProductRepository {
   async existsBySku(companyId: string, sku: string): Promise<boolean> {
     const count = await this.db.product.count({ where: { companyId, sku, isActive: true } });
     return count > 0;
+  }
+
+  async findAll(
+    companyId: string,
+    filter: ListProductsFilter,
+    limit: number,
+    offset: number,
+  ): Promise<{ data: ProductResult[]; total: number }> {
+    const where = this.buildWhere(companyId, filter);
+
+    const [rows, total] = await this.db.$transaction([
+      this.db.product.findMany({
+        where,
+        select: productSelect,
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.db.product.count({ where }),
+    ]);
+
+    return { data: rows.map((r) => this.toResult(r)), total };
+  }
+
+  private buildWhere(companyId: string, filter: ListProductsFilter) {
+    const where: Record<string, unknown> = { companyId, isActive: true };
+
+    if (filter.name) {
+      where['name'] = { contains: filter.name, mode: 'insensitive' };
+    }
+    if (filter.categoryId !== undefined) {
+      where['categoryId'] = filter.categoryId;
+    }
+    if (filter.minStock !== undefined || filter.maxStock !== undefined) {
+      where['stockCurrent'] = {
+        ...(filter.minStock !== undefined ? { gte: filter.minStock } : {}),
+        ...(filter.maxStock !== undefined ? { lte: filter.maxStock } : {}),
+      };
+    }
+    if (filter.specs && Object.keys(filter.specs).length > 0) {
+      // Cada spec es una condición AND individual: specs->>'ram' = '16GB'
+      where['AND'] = Object.entries(filter.specs).map(([key, value]) => ({
+        specs: { path: [key], equals: value },
+      }));
+    }
+
+    return where;
   }
 
   private toData(product: Product) {

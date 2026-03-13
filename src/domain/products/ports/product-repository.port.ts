@@ -29,8 +29,22 @@ export interface StockMovementResult {
   createdAt: Date;
 }
 
+export interface ListProductsFilter {
+  name?: string;
+  categoryId?: number;
+  minStock?: number;
+  maxStock?: number;
+  specs?: Record<string, string>;
+}
+
 export interface IProductRepository {
   save(product: Product): Promise<ProductResult>;
   saveWithInitialMovement(product: Product, movement: StockMovement): Promise<ProductResult>;
   existsBySku(companyId: string, sku: string): Promise<boolean>;
+  findAll(
+    companyId: string,
+    filter: ListProductsFilter,
+    limit: number,
+    offset: number,
+  ): Promise<{ data: ProductResult[]; total: number }>;
 }

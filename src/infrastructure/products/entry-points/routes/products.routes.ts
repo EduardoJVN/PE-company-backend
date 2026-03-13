@@ -6,7 +6,7 @@ import type { CompanyMemberRoleId } from '@domain/catalog-ids.js';
 import { CompanyMemberRoleId as Roles } from '@domain/catalog-ids.js';
 import { requireCompanyAccess } from '@infra/companies/entry-points/middlewares/company-context.middleware.js';
 
-const { OWNER, ADMIN, EDITOR } = Roles;
+const { OWNER, ADMIN, EDITOR, VIEWER } = Roles;
 
 function toCompanyContextRequest(req: Request, res: Response): CompanyContextRequest {
   const company = res.locals['company'] as { id: string; roleId: CompanyMemberRoleId };
@@ -39,6 +39,11 @@ export function createProductRoutes(
 
   router.use(jwtMiddleware);
   router.use(companyContextMiddleware);
+
+  router.get('/', requireCompanyAccess([OWNER, ADMIN, EDITOR, VIEWER]), async (req, res) => {
+    const result = await controller.list(toCompanyContextRequest(req, res));
+    sendHttpResponse(res, result);
+  });
 
   router.post('/', requireCompanyAccess([OWNER, ADMIN, EDITOR]), async (req, res) => {
     const result = await controller.create(toCompanyContextRequest(req, res));
